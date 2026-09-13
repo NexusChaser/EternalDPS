@@ -12,6 +12,19 @@ only ever extended, never changed.
 
 ### Added
 
+- Unity integration: path resolution over `Application.persistentDataPath`, a console log adapter,
+  and a one-call setup that assembles the driver with sane defaults and refuses to start without a
+  product identity or a key.
+- `EternalSaveRunner`: writes when a change has settled and when the application is paused or loses
+  focus. It deliberately does **not** hook `OnApplicationQuit` — Android kills the process without
+  it and WebGL does not call it when the tab closes, so relying on it means losing data exactly
+  where that is hardest to reproduce.
+- `SaveDebouncer`: engine-free, so its timing is testable without a running game. A dragged slider
+  becomes one write, and the value written is the one at the time of writing.
+- `link.xml`, keeping `JsonConvert` and `DefaultContractResolver` from IL2CPP's stripper. Narrow on
+  purpose; a game must preserve its own save models in its own file.
+- Starting on WebGL fails rather than warns: a file store there appears to work and loses everything
+  when the tab closes, because Unity does not flush its virtual filesystem to IndexedDB on its own.
 - `NewtonsoftJsonSerializer` (`0x01`), also a document serializer so a tool can inspect a save
   without knowing the game's types. `TypeNameHandling` is forced off and cannot be turned back on:
   with it enabled the file itself names the .NET type to construct, which turns a save into a small

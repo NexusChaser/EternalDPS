@@ -5,6 +5,7 @@
         "Eternal.Core",
         "Eternal.Tooling",
         "Eternal.Serialization.Newtonsoft",
+        "Eternal.Unity",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

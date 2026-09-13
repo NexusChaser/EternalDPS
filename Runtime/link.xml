@@ -1,0 +1,27 @@
+<!--
+  Kept from IL2CPP's managed code stripper.
+
+  Stripping removes what it cannot see being used, and it cannot see reflection. Newtonsoft builds
+  contracts by reflecting over types at run time, so the stripper has no way to tell that a
+  constructor or a property is needed. The result is a build that serialises perfectly in the editor
+  and throws on device — the worst kind of failure, because it only appears in a real build.
+
+  Deliberately narrow: naming the whole Newtonsoft assembly would keep everything in it and grow the
+  build for no reason. These two types are the ones the architecture calls out.
+
+  A game must preserve ITS OWN save models the same way, in its own link.xml. This package cannot
+  know what they are.
+-->
+<linker>
+  <assembly fullname="Newtonsoft.Json">
+    <type fullname="Newtonsoft.Json.JsonConvert" preserve="all" />
+    <type fullname="Newtonsoft.Json.Serialization.DefaultContractResolver" preserve="all" />
+  </assembly>
+
+  <!--
+    The core is reached through interfaces and delegates more than through direct calls, and the
+    container's own types are constructed from data rather than from code the stripper can follow.
+  -->
+  <assembly fullname="Eternal.Core" preserve="all" />
+  <assembly fullname="Eternal.Serialization.Newtonsoft" preserve="all" />
+</linker>

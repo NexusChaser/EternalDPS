@@ -15,7 +15,7 @@ las referencias en commits y mensajes sigan valiendo.
 |---|---|---|---|
 | 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
 | 1 | Núcleo: contenedor y tubería | 27 | ✅ 27/27 |
-| 2 | Serialización y almacén de archivo | 14 | 🔄 9/14 |
+| 2 | Serialización y almacén de archivo | 14 | ✅ 14/14 |
 | 3 | **Integración mínima en este juego** | 11 | ⬜ |
 | 4 | Pruebas | 17 | ⬜ |
 | 5 | WebGL | 9 | ⬜ |
@@ -260,13 +260,13 @@ mano que nadie contrastó con la especificación es peor que no tenerla: parece 
 - [x] **STO-06** Adopción automática al primer arranque si la carpeta actual está vacía:
       **copiar, nunca mover**, escribir marca para no repetirlo, quedarse con la candidata de
       `savedAtUtc` más reciente si hay varias, y dejar constancia en el log.
-- [ ] **UNI-01** `Eternal.Unity`: resolución de rutas sobre `Application.persistentDataPath` con la
+- [x] **UNI-01** `Eternal.Unity`: resolución de rutas sobre `Application.persistentDataPath` con la
       disposición `machine/` · `account/` · `slots/`.
-- [ ] **UNI-02** Arranque del sistema y registro de serializadores y transformaciones disponibles.
-- [ ] **UNI-03** Disparadores de guardado: `OnApplicationPause(true)` y `OnApplicationFocus(false)`.
+- [x] **UNI-02** Arranque del sistema y registro de serializadores y transformaciones disponibles.
+- [x] **UNI-03** Disparadores de guardado: `OnApplicationPause(true)` y `OnApplicationFocus(false)`.
       **Nunca `OnApplicationQuit`** — en Android y WebGL no se llama de forma fiable.
-- [ ] **UNI-04** Antirrebote, para no escribir en cada movimiento de un slider.
-- [ ] **UNI-05** `link.xml` en el paquete preservando `JsonConvert` y `DefaultContractResolver`.
+- [x] **UNI-04** Antirrebote, para no escribir en cada movimiento de un slider.
+- [x] **UNI-05** `link.xml` en el paquete preservando `JsonConvert` y `DefaultContractResolver`.
 
 > **Hecho cuando:** un modelo de prueba se guarda en disco desde el editor, se relee tras reiniciar
 > Unity, y el archivo es binario ilegible en un editor de texto.
@@ -290,6 +290,23 @@ mano que nadie contrastó con la especificación es peor que no tenerla: parece 
 
 **Cubierto por 56 pruebas nuevas** (206 en total), todas en verde. Incluye el intento real de colar
 un `$type` en un guardado, no solo comprobar el ajuste.
+
+### Decisiones tomadas al implementar `UNI-01..05`
+
+| decisión | por qué | reversible | veredicto |
+|---|---|---|---|
+| **El antirrebote vive en `Eternal.Core`, no en la capa de Unity** | Cuenta segundos que le pasan desde fuera en vez de leer un reloj o un frame. Así la temporización se prueba **exacta** sin juego corriendo, y otro motor solo tiene que darle su delta | sí | **Se queda.** La capa de Unity solo lo alimenta con `Time.unscaledDeltaTime` |
+| **Se usa `unscaledDeltaTime`, no `deltaTime`** | Pausar el juego poniendo la escala de tiempo a cero también dejaría de escribir guardados para siempre | sí | **Se queda** |
+| **El valor se lee al escribir, no al marcar** | Es lo que hace correcto el antirrebote: un slider arrastrado por cincuenta valores escribe el quincuagésimo una vez, en vez del primero tarde | sí | **Se queda** |
+| **Dos escrituras del mismo registro nunca corren a la vez** | Habría dos escritores compitiendo por el mismo archivo y cuál aterrizara último sería suerte. Si llega un cambio con una escritura en vuelo, se vuelve a marcar sucio | sí | **Se queda** |
+| **El arranque *falla* en WebGL en vez de avisar** | Un almacén de archivos ahí aparenta funcionar y lo pierde todo al cerrar la pestaña, porque Unity no vuelca el sistema de archivos virtual a IndexedDB por su cuenta. Es el peor fallo posible: silencioso y solo en producción. Fallar al arrancar es lo único que no llega a un jugador | sí, hasta la fase 5 | **Se queda.** Se puede saltar pasando `Store` a mano |
+| **Sobrecarga no genérica `SaveAsync(key, value, Type, …)`** | El runner conoce el tipo en tiempo de ejecución, no en compilación. La genérica delega en ella | sí | **Se queda** |
+| **El `link.xml` es deliberadamente estrecho** | Nombrar el ensamblado entero de Newtonsoft conservaría todo y engordaría la build sin motivo. **Un juego tiene que preservar sus propios modelos de guardado en su propio `link.xml`**: el paquete no puede saber cuáles son | sí | **Se queda**, con esa advertencia escrita en el archivo |
+
+> ⚠️ **Pendiente de verificar.** Las 7 assemblies compilan sin errores y los `.meta` están generados,
+> pero el puente del editor se colgó antes de poder **ejecutar** la suite con las pruebas de
+> `UNI-01..05` dentro. Las ~25 pruebas nuevas de esta tanda **no se han ejecutado todavía**. Hay que
+> reiniciar Unity y correrlas antes de dar la fase por buena.
 
 ---
 

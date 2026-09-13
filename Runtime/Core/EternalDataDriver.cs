@@ -286,13 +286,38 @@ namespace NexusChaser.EternalDPS
         /// for the record's scope and kind.
         /// </param>
         /// <param name="cancellationToken">Cancellation.</param>
-        public async Task SaveAsync<T>(
+        public Task SaveAsync<T>(
             EternalKey key,
             T value,
             SaveMetadata metadata = null,
             SaveProfile? profile = null,
             CancellationToken cancellationToken = default)
         {
+            return SaveAsync(key, value, typeof(T), metadata, profile, cancellationToken);
+        }
+
+        /// <summary>
+        /// Writes a record whose type is only known at run time.
+        /// </summary>
+        /// <remarks>
+        /// What the generic overload delegates to, and what anything holding a value as
+        /// <see cref="object"/> needs — a component that captures state through a delegate, or a
+        /// tool rewriting a record it just read. The declared type matters: it is what the
+        /// serializer writes against, and it is not always the runtime type.
+        /// </remarks>
+        public async Task SaveAsync(
+            EternalKey key,
+            object value,
+            Type valueType,
+            SaveMetadata metadata = null,
+            SaveProfile? profile = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (valueType == null)
+            {
+                throw new ArgumentNullException(nameof(valueType));
+            }
+
             RegisterRecord(key);
 
             var policy = profile ?? SaveProfile.For(key.Scope, key.Kind);
@@ -308,7 +333,7 @@ namespace NexusChaser.EternalDPS
                 stamped.AppVersion = _appVersion;
             }
 
-            var body = _serializer.Serialize(value, typeof(T));
+            var body = _serializer.Serialize(value, valueType);
 
             byte[] file;
 
