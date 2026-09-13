@@ -14,12 +14,12 @@ las referencias en commits y mensajes sigan valiendo.
 | fase | bloque | tareas | estado |
 |---|---|---|---|
 | 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
-| 1 | Núcleo: contenedor y tubería | 25 | 🔄 8/25 |
+| 1 | Núcleo: contenedor y tubería | 27 | 🔄 8/27 |
 | 2 | Serialización y almacén de archivo | 14 | ⬜ |
 | 3 | **Integración mínima en este juego** | 11 | ⬜ |
 | 4 | Pruebas | 17 | ⬜ |
 | 5 | WebGL | 9 | ⬜ |
-| 6 | Tooling sin motor | 12 | ⬜ |
+| 6 | Tooling sin motor | 13 | ⬜ |
 | 7 | Ventanas de Unity | 11 | ⬜ |
 | 8 | Ranuras y catálogo | 9 | ⬜ |
 | 9 | Cifrado | 6 | ⬜ |
@@ -28,7 +28,8 @@ las referencias en commits y mensajes sigan valiendo.
 | 12 | Binario | 6 | ⬜ |
 | 13 | Cierre y publicación | 7 | ⬜ |
 
-**152 tareas. Las 5 decisiones, cerradas.**
+**155 tareas. Las 5 decisiones de diseño, cerradas. Las 6 de implementación de `CORE-01..08`,
+confirmadas.**
 
 **Hitos:**
 - **H1 — este juego ya persiste** → al terminar la fase 3. Es el primer punto con valor real.
@@ -166,23 +167,38 @@ las referencias en commits y mensajes sigan valiendo.
 - [ ] **CORE-24** Política de retirada por clave: `Active` → `ReadOnly` → `Warn` → `Rejected`.
 - [ ] **CORE-25** Derivación con **HKDF** en el paquete; el material de entrada lo pone el juego.
 
+### Consecuencias de las decisiones de `CORE-01..08`
+
+Salen de la tabla de abajo. No son decisiones nuevas: son los cabos que dejaron abiertos.
+
+- [ ] **CORE-26** El driver **comprueba conflictos de clave al registrarlas** y falla ahí mismo.
+      Dos claves con el mismo ámbito, ranura e id pero **distinto tipo** apuntan al mismo archivo,
+      porque la ruta no codifica el tipo. Ya existe `EternalKey.ConflictsWith`; esto es lo que lo
+      llama. Tiene que reventar en el **primer segundo de la primera ejecución**, no meses después
+      con una partida pisada. → cierra la decisión **2**
+- [ ] **CORE-27** Aviso —**no** bloqueo— cuando una clave usa una combinación de ámbito y tipo
+      fuera de la matriz de la §3 (`ScopeRules.IsMeaningful`). Una vez por clave, al registrarla.
+      Guardar **progreso con ámbito de máquina** se acepta, pero se dice: es progreso que se
+      evapora al cambiar de ordenador. → cierra la decisión **6**
+
 > **Hecho cuando:** se puede escribir y volver a leer un `byte[]` con un `ISerializer` y un
 > `IStore` falsos en memoria, el HMAC detecta un bit cambiado, y `CanAdopt` reconoce un archivo
 > escrito bajo otro nombre de producto.
 
 ### Decisiones tomadas al implementar `CORE-01..08`
 
-Seis cosas que el plan no decía y hubo que decidir. Se anotan aquí para que se puedan discutir
-ahora y no dentro de tres fases, cuando ya sean contrato.
+Seis cosas que el plan no decía y hubo que decidir. **Las seis quedan confirmadas**; la columna
+de veredicto dice qué se eligió y qué tarea cierra lo que faltaba. Se anotan aquí para que no haya
+que volver a razonarlas dentro de tres fases, cuando ya sean contrato.
 
-| decisión | por qué | reversible |
-|---|---|---|
-| **`RecordId` se pasa a minúsculas** y solo admite `[a-z0-9_-]` empezando por letra o dígito | Windows no distingue mayúsculas y Linux sí: `MySave` y `mysave` serían un archivo en una plataforma y dos en la otra. Plegar la caja lo hace un archivo en todas. El alfabeto estrecho cierra además el recorrido de rutas (`../`), los puntos y espacios finales, y las diferencias de normalización Unicode | sí, hasta que se publique |
-| **El `RecordKind` no aparece en la ruta** | Es lo que dice la §9 de la arquitectura: `account/prefs.etm` y `account/progress.etm` se distinguen por el id, no por el tipo. El tipo elige la **política**, no el sitio. Consecuencia: el id debe ser único dentro del ámbito aunque cambie el tipo, y `EternalKey.ConflictsWith` es lo que lo detecta | sí |
-| **`SlotId` se colapsa a `Default` cuando el ámbito no es `Slot`** | Si no, dos claves que apuntan al mismo archivo compararían distinto. Es el bug silencioso de toda caché con clave compuesta | sí |
-| **`EternalNode`**, un árbol propio para `IDocumentSerializer` | Sin un tipo concreto la interfaz no se puede llamar y la tarea sería vacía. Devolver `object` sería peor. Los números guardan su **texto original**: pasar un id de 64 bits por un `double` lo redondea y lo reescribe distinto — abrir un guardado en una herramienta y cerrarlo sin tocar nada tiene que dar los mismos bytes. **Pendiente:** no conserva el orden de los miembros; revisar en la fase 6 | sí, nadie lo consume aún |
-| **`IStore.FlushAsync`** añadido a la interfaz | La §14 exige forzar `FS.syncfs()` en WebGL. Sin un método en el contrato, el driver no tiene dónde llamarlo y el volcado se queda fuera de la abstracción | no, es la interfaz |
-| **`ScopeRules` es informativo, no bloquea** | La matriz de la §3 tiene seis casillas con sentido, pero un juego puede tener un motivo que la matriz no previó. El sistema lo señala y se aparta | sí |
+| decisión | por qué | reversible | **veredicto** |
+|---|---|---|---|
+| **`RecordId` se pasa a minúsculas** y solo admite `[a-z0-9_-]` empezando por letra o dígito | Windows no distingue mayúsculas y Linux sí: `MySave` y `mysave` serían un archivo en una plataforma y dos en la otra. Plegar la caja lo hace un archivo en todas. El alfabeto estrecho cierra además el recorrido de rutas (`../`), los puntos y espacios finales, y las diferencias de normalización Unicode | sí, hasta que se publique | **Se queda.** Es la intersección real de NTFS, ext4, APFS/HFS+, FAT32, IndexedDB y consola — no una preferencia. El caso que de verdad muerde es macOS: HFS+ normaliza los nombres a NFD, así que una `é` se escribe de una forma y se busca de otra; ser ASCII puro lo elimina de raíz en vez de mitigarlo. **No limita al jugador**: el nombre visible de la ranura vive en los metadatos y no tiene ninguna de estas restricciones |
+| **El `RecordKind` no aparece en la ruta** | Es lo que dice la §9 de la arquitectura: `account/prefs.etm` y `account/progress.etm` se distinguen por el id, no por el tipo. El tipo elige la **política**, no el sitio. Consecuencia: el id debe ser único dentro del ámbito aunque cambie el tipo, y `EternalKey.ConflictsWith` es lo que lo detecta | sí | **Se queda la ruta, pero faltaba el cable.** La §9 es contrato y moverla después es una migración. `ConflictsWith` detecta el choque pero **nadie lo llamaba**: era una alarma sin conectar. Lo conecta `CORE-26`. Se descartó meter el tipo en la ruta: contradice la §9 y no gana nada que la comprobación no dé |
+| **`SlotId` se colapsa a `Default` cuando el ámbito no es `Slot`** | Si no, dos claves que apuntan al mismo archivo compararían distinto. Es el bug silencioso de toda caché con clave compuesta | sí | **Se queda.** La alternativa era lanzar excepción al pasar una ranura a un ámbito que no la usa; se descartó porque rompe cualquier bucle que recorra ámbitos con la misma ranura sin que nadie haya hecho nada mal |
+| **`EternalNode`**, un árbol propio para `IDocumentSerializer` | Sin un tipo concreto la interfaz no se puede llamar y la tarea sería vacía. Devolver `object` sería peor. Los números guardan su **texto original**: pasar un id de 64 bits por un `double` lo redondea y lo reescribe distinto — abrir un guardado en una herramienta y cerrarlo sin tocar nada tiene que dar los mismos bytes. **Pendiente:** no conserva el orden de los miembros; revisar en la fase 6 | sí, nadie lo consume aún | **Se queda, con la deuda anotada en `TOOL-13`.** Guardar el texto original de los números es lo que está bien decidido y no se toca. El orden se deja para la fase 6 **a propósito**: aún no se sabe si las ventanas editarán un árbol o un texto, y adelantarse podía ser trabajo tirado. Nadie lo consume, así que esperar cuesta cero |
+| **`IStore.FlushAsync`** añadido a la interfaz | La §14 exige forzar `FS.syncfs()` en WebGL. Sin un método en el contrato, el driver no tiene dónde llamarlo y el volcado se queda fuera de la abstracción | no, es la interfaz | **Se queda, y era la que había que acertar hoy.** Volcar dentro de `WriteAsync` sería un error de rendimiento serio: `FS.syncfs()` no vuelca un archivo, vuelca el sistema de archivos **entero**, así que guardar ajustes + sesión + progreso dispararía tres volcados completos en vez de uno. Una interfaz opcional `IFlushableStore` sería peor: obliga a un *cast* en cada guardado, justo en la ruta que solo corre en WebGL. El riesgo de que alguien escriba y no vuelque lo cubre el driver, que llama a flush siempre al cerrar un guardado |
+| **`ScopeRules` es informativo, no bloquea** | La matriz de la §3 tiene seis casillas con sentido, pero un juego puede tener un motivo que la matriz no previó. El sistema lo señala y se aparta | sí | **Se queda sin bloquear, pero deja de estar callado.** Tal como estaba no decía *nada*: guardar progreso con ámbito de máquina se aceptaba en silencio y el jugador lo descubría al estrenar portátil. `CORE-27` lo convierte en un aviso |
 
 **Cubierto por 62 pruebas nuevas** (65 en total con las tres de la fase 0), todas en verde, y
 `Eternal.Core` sigue sin referenciar el motor: solo `netstandard`.
@@ -342,6 +358,11 @@ Corre en CI **sin abrir Unity**, que es el beneficio concreto de haber mantenido
 - [ ] **TOOL-12** Tamaño de clave: **suelo de 32 bytes impuesto por el paquete**, elegible por el
       proyecto hasta 64. Avisar si se pide más: HMAC reduce con hash cualquier clave mayor que el
       bloque de SHA-256, así que por encima de 64 bytes **no compra nada**.
+- [ ] **TOOL-13** **Orden de los miembros en `EternalNode`.** Hoy usa un diccionario y no conserva
+      el orden, así que reescribir un guardado desde una herramienta baraja los campos y deja un
+      diff ilegible. No corrompe nada; hace inútil comparar dos guardados. Se decide **aquí** y no
+      antes, cuando ya se sabe si las ventanas editan un árbol o un texto: arreglarlo antes de
+      saberlo podía ser trabajo tirado. → cierra la deuda de la decisión **4**
 
 > **Hecho cuando:** las pruebas de Tooling pasan sin referenciar Unity.
 
