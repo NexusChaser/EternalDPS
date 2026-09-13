@@ -12,6 +12,21 @@ only ever extended, never changed.
 
 ### Added
 
+- `NewtonsoftJsonSerializer` (`0x01`), also a document serializer so a tool can inspect a save
+  without knowing the game's types. `TypeNameHandling` is forced off and cannot be turned back on:
+  with it enabled the file itself names the .NET type to construct, which turns a save into a small
+  program.
+- `EternalTypeDiscriminatorConverter<T>`: polymorphism behind a closed list of names the game
+  registers. A name that is not on the list is refused, and editing a save cannot add one.
+- `FileStore`: an asynchronous store over a real folder. Writes go to a `.part` file and then take
+  the record's place in one operation, so a write that dies partway never leaves half a save under
+  the real name. The extension is deliberately not `.etm`, so a Steam Auto-Cloud pattern cannot
+  upload a half-written file as if it were a save.
+- Backup rotation driven by `SaveProfile.Backups`, through the store's own operations so every
+  backend gets it. A record that does not verify is never promoted over a good backup.
+- `SiblingAdoption`: recovers saves stranded in a neighbouring folder by a rename. Bounded to
+  sibling folders, copies rather than moves, keeps the most recently played candidate, and leaves a
+  marker so it runs once.
 - `EternalKeyRing`: one active key plus every retired one, refusing a ring with two active keys, a
   repeated identifier, or an active key that is not the highest — rotation only moves forward.
 - HKDF over SHA-256 (RFC 5869), verified against the known-answer vectors in the RFC's Appendix A.

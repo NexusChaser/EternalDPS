@@ -281,14 +281,21 @@ namespace NexusChaser.EternalDPS
         /// what the caller set, because those three are the system's to maintain and a game getting
         /// them wrong is how a save becomes unidentifiable.
         /// </param>
+        /// <param name="profile">
+        /// Its policy. Only <see cref="SaveProfile.Backups"/> matters here. Defaults to the preset
+        /// for the record's scope and kind.
+        /// </param>
         /// <param name="cancellationToken">Cancellation.</param>
         public async Task SaveAsync<T>(
             EternalKey key,
             T value,
             SaveMetadata metadata = null,
+            SaveProfile? profile = null,
             CancellationToken cancellationToken = default)
         {
             RegisterRecord(key);
+
+            var policy = profile ?? SaveProfile.For(key.Scope, key.Kind);
 
             var stamped = metadata?.Clone() ?? new SaveMetadata();
 
@@ -317,10 +324,74 @@ namespace NexusChaser.EternalDPS
                 file = ContainerWriter.WriteUnsigned(body, _serializer.FormatId, _writeTransforms, stamped);
             }
 
+            await RotateBackupsAsync(key, policy, cancellationToken).ConfigureAwait(false);
+
             await _store.WriteAsync(key.RelativePath, file, cancellationToken).ConfigureAwait(false);
             await _store.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             _log.Info("Saved " + key.RelativePath + " (" + file.Length + " bytes).");
+        }
+
+        /// <summary>
+        /// Shifts the existing copies along and keeps the current record as the newest backup,
+        /// before it is overwritten.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Done through the store's own operations rather than inside the file store, so that every
+        /// backend gets backups — the browser and Steam Cloud included, where there is no rename to
+        /// lean on.
+        /// </para>
+        /// <para>
+        /// <strong>The record is verified before being promoted.</strong> Without that check, a save
+        /// that had become corrupt would be copied over the last good backup, and the next save
+        /// would push it down the chain until every copy was the same damaged file. The one moment
+        /// backups exist for would be the one moment they had all been overwritten.
+        /// </para>
+        /// </remarks>
+        private async Task RotateBackupsAsync(EternalKey key, SaveProfile policy, CancellationToken cancellationToken)
+        {
+            if (policy.Backups <= 0)
+            {
+                return;
+            }
+
+            var current = await _store.ReadAsync(key.RelativePath, cancellationToken).ConfigureAwait(false);
+
+            if (current == null)
+            {
+                return;
+            }
+
+            var report = ContainerReader.Verify(current, _keys);
+
+            if (!report.IsValid && report.Status != IntegrityStatus.Unsigned)
+            {
+                _log.Warning(
+                    "Not rotating backups for " + key.RelativePath + ": the current record does not " +
+                    "verify (" + report.Status + "), and copying it over a good backup would destroy " +
+                    "the only usable copy.");
+                return;
+            }
+
+            // Oldest first, so nothing is overwritten before it has been moved along.
+            for (var generation = policy.Backups; generation > 1; generation--)
+            {
+                var older = await _store
+                    .ReadAsync(key.RelativeBackupPath(generation - 1), cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (older != null)
+                {
+                    await _store
+                        .WriteAsync(key.RelativeBackupPath(generation), older, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+            }
+
+            await _store
+                .WriteAsync(key.RelativeBackupPath(1), current, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         /// <summary>

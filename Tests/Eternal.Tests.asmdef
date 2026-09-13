@@ -4,6 +4,7 @@
     "references": [
         "Eternal.Core",
         "Eternal.Tooling",
+        "Eternal.Serialization.Newtonsoft",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
@@ -14,12 +15,19 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "nunit.framework.dll"
+        "nunit.framework.dll",
+        "Newtonsoft.Json.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [
         "UNITY_INCLUDE_TESTS"
     ],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.nuget.newtonsoft-json",
+            "expression": "3.0.0",
+            "define": "ETERNAL_NEWTONSOFT"
+        }
+    ],
     "noEngineReferences": false
 }

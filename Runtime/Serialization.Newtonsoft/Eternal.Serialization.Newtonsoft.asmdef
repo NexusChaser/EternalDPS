@@ -2,14 +2,15 @@
     "name": "Eternal.Serialization.Newtonsoft",
     "rootNamespace": "NexusChaser.EternalDPS.Serialization",
     "references": [
-        "Eternal.Core",
-        "Newtonsoft.Json"
+        "Eternal.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [
         "ETERNAL_NEWTONSOFT"

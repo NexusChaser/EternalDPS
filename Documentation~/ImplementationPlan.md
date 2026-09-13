@@ -15,7 +15,7 @@ las referencias en commits y mensajes sigan valiendo.
 |---|---|---|---|
 | 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
 | 1 | Núcleo: contenedor y tubería | 27 | ✅ 27/27 |
-| 2 | Serialización y almacén de archivo | 14 | ⬜ |
+| 2 | Serialización y almacén de archivo | 14 | 🔄 9/14 |
 | 3 | **Integración mínima en este juego** | 11 | ⬜ |
 | 4 | Pruebas | 17 | ⬜ |
 | 5 | WebGL | 9 | ⬜ |
@@ -245,19 +245,19 @@ mano que nadie contrastó con la especificación es peor que no tenerla: parece 
 
 ## Fase 2 — Serialización y almacén de archivo
 
-- [ ] **SER-01** Adaptador Newtonsoft, `FormatId 0x01`, implementando también `IDocumentSerializer`.
-- [ ] **SER-02** Ajustes de Json.NET: cultura invariante, **`TypeNameHandling` desactivado**
+- [x] **SER-01** Adaptador Newtonsoft, `FormatId 0x01`, implementando también `IDocumentSerializer`.
+- [x] **SER-02** Ajustes de Json.NET: cultura invariante, **`TypeNameHandling` desactivado**
       (agujero de deserialización conocido), fechas en UTC ISO-8601.
-- [ ] **SER-03** Patrón de polimorfismo con `JsonConverter` propio y **campo discriminador
+- [x] **SER-03** Patrón de polimorfismo con `JsonConverter` propio y **campo discriminador
       explícito**, como alternativa segura a `TypeNameHandling`.
-- [ ] **STO-01** `FileStore` asíncrono con todas las capacidades.
-- [ ] **STO-02** Escritura atómica: `.part` → reemplazo. La extensión `.part` es deliberada para que
+- [x] **STO-01** `FileStore` asíncrono con todas las capacidades.
+- [x] **STO-02** Escritura atómica: `.part` → reemplazo. La extensión `.part` es deliberada para que
       el patrón `*.etm` de Steam **no** la recoja.
-- [ ] **STO-03** Rotación de copias `.bak` según `SaveProfile.Backups`.
-- [ ] **STO-04** Listado y borrado, con claves inexistentes tratadas como caso normal.
-- [ ] **STO-05** Barrido de **carpetas hermanas** bajo la raíz de datos, buscando `.etm` adoptables
+- [x] **STO-03** Rotación de copias `.bak` según `SaveProfile.Backups`.
+- [x] **STO-04** Listado y borrado, con claves inexistentes tratadas como caso normal.
+- [x] **STO-05** Barrido de **carpetas hermanas** bajo la raíz de datos, buscando `.etm` adoptables
       con `CORE-20`. Acotado a hermanas: nunca se recorre el disco entero.
-- [ ] **STO-06** Adopción automática al primer arranque si la carpeta actual está vacía:
+- [x] **STO-06** Adopción automática al primer arranque si la carpeta actual está vacía:
       **copiar, nunca mover**, escribir marca para no repetirlo, quedarse con la candidata de
       `savedAtUtc` más reciente si hay varias, y dejar constancia en el log.
 - [ ] **UNI-01** `Eternal.Unity`: resolución de rutas sobre `Application.persistentDataPath` con la
@@ -270,6 +270,26 @@ mano que nadie contrastó con la especificación es peor que no tenerla: parece 
 
 > **Hecho cuando:** un modelo de prueba se guarda en disco desde el editor, se relee tras reiniciar
 > Unity, y el archivo es binario ilegible en un editor de texto.
+>
+> 🔄 **Parcial:** ya hay una prueba que monta el driver sobre una carpeta real del disco, guarda,
+> relee y comprueba que el archivo resultante **no contiene el texto que se guardó**. Falta la parte
+> del editor, que depende de `UNI-01..05`.
+
+### Decisiones tomadas al implementar `SER-01..03` y `STO-01..06`
+
+| decisión | por qué | reversible | veredicto |
+|---|---|---|---|
+| **`FileStore` vive en `Eternal.Core`, no en `Eternal.Unity`** | No necesita nada más que `System.IO`. En el núcleo lo usan las herramientas de línea de comandos y lo prueba CI sin abrir Unity, que es la propiedad alrededor de la que está montado el paquete. `Eternal.Unity` aporta **solo la ruta raíz** | sí | **Se queda.** La tabla de la §7 decía «almacenes» en `Eternal.Unity`: corregida ahí |
+| **La rotación de copias está en el driver, no en el almacén** | El plan la puso bajo `STO`, lo que sugería el almacén de archivos. Hecha con las operaciones del `IStore`, **todos** los backends tienen copias: el navegador y Steam Cloud incluidos, donde no hay `rename` en el que apoyarse | sí | **Se queda** |
+| **Antes de promover un registro a copia, se verifica** | Sin esa comprobación, un guardado que se hubiera corrompido se copiaría encima de la última copia buena, y el siguiente guardado lo empujaría por la cadena hasta que **todas** las copias fueran el mismo archivo dañado. El único momento para el que existen las copias sería el momento en que todas se habrían sobrescrito | **no**, es lo que las hace útiles | **Se queda.** Con prueba dedicada |
+| **`File.Move(origen, destino, overwrite)` no existe** en el perfil netstandard de Unity | Descubierto compilando, no suponiendo. Se usa `File.Replace`, que el sistema operativo hace en un solo paso. Donde no está soportado —almacenamiento externo de Android en FAT32, por ejemplo— **degrada a borrar y renombrar, y ahí sí hay una ventana sin atomicidad**. Es exactamente por esto que la atomicidad se declara como capacidad y no se promete | no, es la API disponible | **Se queda**, con el límite escrito en el código |
+| **`.part` para el archivo temporal**, nunca `.etm` | Auto-Cloud de Steam se configura con un patrón, y el patrón obvio es `*.etm`. Un temporal a medio escribir que encajara se subiría a la nube como si fuera una partida | no | **Se queda.** Los `.part` además nunca se listan como registros |
+| **Un `DateTimeOffset` no se normaliza a UTC**; un `DateTime` sí | `DateTime` es el ambiguo: no lleva desplazamiento, así que el mismo texto significa un instante distinto según dónde se lea. `DateTimeOffset` ya lo lleva. **Consecuencia:** dos guardados escritos en husos distintos muestran texto distinto para el mismo instante, así que se comparan como instantes y jamás como cadenas | sí | **Se queda.** Yo había documentado «las fechas van en UTC» sin matizar, y no era exacto: corregido |
+| **El barrido de adopción no deja marca si no encontró nada** | Así vuelve a intentarlo en el siguiente arranque, por si el jugador restaura después una carpeta antigua. Listar cuatro carpetas hermanas no cuesta nada | sí | **Se queda** |
+| **`overrideReferences` explícito en los asmdef** que usan Newtonsoft | Estaban compilando solo porque Unity auto-referencia **todas** las DLL del proyecto. Declarar `Newtonsoft.Json.dll` es lo que la referencia realmente es, y evita que el ensamblado arrastre en silencio DLL ajenas | sí | **Se queda** |
+
+**Cubierto por 56 pruebas nuevas** (206 en total), todas en verde. Incluye el intento real de colar
+un `$type` en un guardado, no solo comprobar el ajuste.
 
 ---
 

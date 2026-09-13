@@ -15,9 +15,9 @@ engine-independent core.
 > [!WARNING]
 > **This package is under early development and is not ready for production use.**
 >
-> The core is complete and covered by 150 tests, but nothing yet touches a real disk: there is no
-> file store, no serializer adapter and no Unity integration, so the package cannot be used in a
-> game as it stands. The public API is unstable and
+> The core, the JSON adapter and the file store are done and covered by 206 tests, so the package
+> saves and loads against a real folder. What is missing is the Unity integration — path
+> resolution, startup and save triggers — so it is not yet wired into a game. The public API is unstable and
 > will keep changing until a second project consumes the package. The **file format**, once version
 > 1 of the container ships, is a different matter: it will only ever be extended, never changed.
 
@@ -154,7 +154,7 @@ themselves with the new one.
 | --- | --- | --- |
 | 0 | Package scaffolding | ✅ done |
 | 1 | Core: container and transform pipeline | ✅ done |
-| 2 | Newtonsoft adapter and file store | 🟨 next |
+| 2 | Newtonsoft adapter and file store | 🟨 in progress |
 | 3 | Test suite, golden files, store conformance | ⬜ |
 | 4 | WebGL store | ⬜ |
 | 5 | Engine-agnostic tooling | ⬜ |

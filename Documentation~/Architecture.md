@@ -370,7 +370,7 @@ Eso es lo que hace que «implementado pero este juego no lo usa» funcione de ve
 | `Eternal.Serialization.Newtonsoft` | Core + Newtonsoft | version define sobre `com.unity.nuget.newtonsoft-json` |
 | `Eternal.Serialization.Binary` | Core + MemoryPack | **reservado**, no se implementa ahora |
 | `Eternal.Crypto` | Core | AES. Un juego que no lo quiera no lo envía en el build |
-| `Eternal.Unity` | Core + UnityEngine | almacenes, rutas, ciclo de vida, `link.xml` |
+| `Eternal.Unity` | Core + UnityEngine | **rutas**, ciclo de vida, `link.xml` |
 | `Eternal.Unity.Editor` | Eternal.Unity + Tooling | **solo** las ventanas. Toda la lógica está en Tooling |
 | `Eternal.Cli` | Tooling | opcional: `verify` / `dump` / `repack` para CI y soporte |
 | `Eternal.Steam` | Eternal.Unity + wrapper | `SteamRemoteStorageStore`, la vía de la API. Con Auto-Cloud no se referencia |
@@ -378,6 +378,13 @@ Eso es lo que hace que «implementado pero este juego no lo usa» funcione de ve
 
 Que `Eternal.Core` y `Eternal.Tooling` no dependan de `UnityEngine` es lo que cumple el requisito
 de «otro motor»: otro motor aporta su `IStore`, su `ISerializer` y su UI, y el resto vale tal cual.
+
+> **Corregido al implementar.** Esta tabla ponía los **almacenes** en `Eternal.Unity`. El almacén de
+> archivos no necesita nada más que `System.IO`, así que vive en `Eternal.Core`: así lo pueden usar
+> las herramientas de línea de comandos y lo prueba CI sin abrir Unity, que es justo la propiedad
+> alrededor de la que está montado el paquete. `Eternal.Unity` aporta **solo la ruta raíz**
+> (`Application.persistentDataPath`). Los almacenes que sí dependen de una plataforma —WebGL,
+> Steam, consola— siguen en sus ensamblados.
 
 **Distribución por git URL, nunca copiando la carpeta.** Versionado semántico y changelog, porque
 el juego 2 estará en una versión anterior y no se pueden actualizar los dos a la vez.
