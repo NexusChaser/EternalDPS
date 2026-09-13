@@ -1,0 +1,18 @@
+# Proyectos y binarios de IDE
+*.csproj
+*.sln
+*.user
+*.suo
+.vs/
+.idea/
+obj/
+bin/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# OJO: los archivos .meta NO se ignoran.
+# Unity los necesita para mantener GUIDs estables entre maquinas y versiones.
+# Si se ignoran, cada instalacion del paquete regenera GUIDs distintos y se rompen
+# las referencias de quien lo consuma.

@@ -1,0 +1,16 @@
+{
+    "name": "Eternal.Tooling",
+    "rootNamespace": "NexusChaser.EternalDPS.Tooling",
+    "references": [
+        "Eternal.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

@@ -1,0 +1,25 @@
+{
+    "name": "Eternal.Serialization.Newtonsoft",
+    "rootNamespace": "NexusChaser.EternalDPS.Serialization",
+    "references": [
+        "Eternal.Core",
+        "Newtonsoft.Json"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ETERNAL_NEWTONSOFT"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.nuget.newtonsoft-json",
+            "expression": "3.0.0",
+            "define": "ETERNAL_NEWTONSOFT"
+        }
+    ],
+    "noEngineReferences": true
+}

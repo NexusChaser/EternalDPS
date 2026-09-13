@@ -1,0 +1,20 @@
+{
+    "name": "Eternal.Unity.Editor",
+    "rootNamespace": "NexusChaser.EternalDPS.Unity.Editor",
+    "references": [
+        "Eternal.Core",
+        "Eternal.Tooling",
+        "Eternal.Unity"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

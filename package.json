@@ -1,0 +1,18 @@
+{
+  "name": "com.nexuschaser.eternaldps",
+  "version": "0.1.0",
+  "displayName": "EternalDPS",
+  "description": "Eternal Data Persistence System. Sistema de guardado reutilizable con un nucleo independiente del motor: contenedor firmado, serializacion intercambiable, almacenes por plataforma y herramientas de inspeccion. API inestable hasta que exista un segundo proyecto consumidor.",
+  "unity": "2022.3",
+  "author": {
+    "name": "Nexus Chaser"
+  },
+  "keywords": [
+    "save",
+    "persistence",
+    "serialization",
+    "savegame"
+  ],
+  "license": "MIT",
+  "hideInEditor": false
+}

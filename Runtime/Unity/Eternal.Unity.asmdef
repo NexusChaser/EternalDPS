@@ -1,0 +1,16 @@
+{
+    "name": "Eternal.Unity",
+    "rootNamespace": "NexusChaser.EternalDPS.Unity",
+    "references": [
+        "Eternal.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
