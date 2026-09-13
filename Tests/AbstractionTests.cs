@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using NexusChaser.EternalDPS.Abstractions;
 using NUnit.Framework;
@@ -184,108 +181,6 @@ namespace NexusChaser.EternalDPS.Tests
             IEternalLog log = null;
 
             Assert.DoesNotThrow(() => log.Warning("ignored"));
-        }
-
-        /// <summary>Everything a store has to be, held in a dictionary.</summary>
-        private sealed class InMemoryStore : IStore
-        {
-            private readonly Dictionary<string, byte[]> _files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-
-            public StoreCapabilities Capabilities => StoreCapabilities.All;
-
-            public Task<bool> ExistsAsync(string relativePath, CancellationToken cancellationToken)
-            {
-                return Task.FromResult(_files.ContainsKey(relativePath));
-            }
-
-            public Task<byte[]> ReadAsync(string relativePath, CancellationToken cancellationToken)
-            {
-                return Task.FromResult(_files.TryGetValue(relativePath, out var data) ? data : null);
-            }
-
-            public Task WriteAsync(string relativePath, byte[] data, CancellationToken cancellationToken)
-            {
-                _files[relativePath] = data;
-                return Task.CompletedTask;
-            }
-
-            public Task DeleteAsync(string relativePath, CancellationToken cancellationToken)
-            {
-                _files.Remove(relativePath);
-                return Task.CompletedTask;
-            }
-
-            public Task<IReadOnlyList<string>> ListAsync(string prefix, CancellationToken cancellationToken)
-            {
-                IReadOnlyList<string> matches = _files.Keys
-                    .Where(path => path.StartsWith(prefix ?? string.Empty, StringComparison.Ordinal))
-                    .OrderBy(path => path, StringComparer.Ordinal)
-                    .ToList();
-
-                return Task.FromResult(matches);
-            }
-
-            public Task FlushAsync(CancellationToken cancellationToken)
-            {
-                return Task.CompletedTask;
-            }
-        }
-
-        /// <summary>A transform that is its own inverse. Enough to exercise the contract.</summary>
-        private sealed class ReversingTransform : IByteTransform
-        {
-            public byte TransformId => 0x80;
-
-            public byte[] Apply(byte[] input)
-            {
-                var output = (byte[])input.Clone();
-                Array.Reverse(output);
-                return output;
-            }
-
-            public byte[] Invert(byte[] input)
-            {
-                return Apply(input);
-            }
-        }
-
-        /// <summary>A serialiser that only knows how to handle strings, and its tree view.</summary>
-        private sealed class Utf8StringSerializer : IDocumentSerializer
-        {
-            public byte FormatId => 0x80;
-
-            public byte[] Serialize(object value, Type type)
-            {
-                return Encoding.UTF8.GetBytes((string)value ?? string.Empty);
-            }
-
-            public object Deserialize(byte[] data, Type type)
-            {
-                return Encoding.UTF8.GetString(data);
-            }
-
-            public EternalNode ToDocument(byte[] data)
-            {
-                var document = EternalNode.Object();
-                document["value"] = EternalNode.String(Encoding.UTF8.GetString(data));
-                return document;
-            }
-
-            public byte[] FromDocument(EternalNode document)
-            {
-                return Encoding.UTF8.GetBytes(document["value"].StringValue);
-            }
-        }
-
-        /// <summary>A clock that never moves.</summary>
-        private sealed class FixedClock : IClock
-        {
-            public FixedClock(DateTimeOffset now)
-            {
-                UtcNow = now;
-            }
-
-            public DateTimeOffset UtcNow { get; }
         }
     }
 }

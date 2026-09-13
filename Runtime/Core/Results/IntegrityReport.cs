@@ -54,6 +54,18 @@ namespace NexusChaser.EternalDPS
         /// the key was retired and dropped from the set.
         /// </summary>
         UnknownKey = 6,
+
+        /// <summary>
+        /// The envelope is a version this build does not know how to read. Not damage: a save from
+        /// a newer build. It must be left exactly as it is.
+        /// </summary>
+        UnsupportedVersion = 7,
+
+        /// <summary>
+        /// The file was signed with a key that has been retired past the point of being accepted.
+        /// The signature may well be intact; the key is simply no longer trusted.
+        /// </summary>
+        RejectedKey = 8,
     }
 
     /// <summary>

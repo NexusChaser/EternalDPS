@@ -170,11 +170,29 @@ namespace NexusChaser.EternalDPS
                 throw new ArgumentException("A valid report is not a failure.", nameof(report));
             }
 
-            var status = report.Status == IntegrityStatus.MagicMismatch
-                ? LoadStatus.NotEternalFile
-                : LoadStatus.IntegrityFailed;
+            return LoadResult<T>.Create(MapStatus(report.Status), default, report.Detail, false, report);
+        }
 
-            return LoadResult<T>.Create(status, default, report.Detail, false, report);
+        /// <summary>
+        /// Turns an integrity verdict into a load verdict. Kept in one place so that the two
+        /// vocabularies cannot drift apart: a new integrity status that nobody maps here would
+        /// silently become a generic failure.
+        /// </summary>
+        private static LoadStatus MapStatus(IntegrityStatus status)
+        {
+            switch (status)
+            {
+                // Not damage — the file belongs to something else entirely.
+                case IntegrityStatus.MagicMismatch:
+                    return LoadStatus.NotEternalFile;
+
+                // Not damage either: a save from a newer build, which must be left untouched.
+                case IntegrityStatus.UnsupportedVersion:
+                    return LoadStatus.ContainerTooNew;
+
+                default:
+                    return LoadStatus.IntegrityFailed;
+            }
         }
     }
 }

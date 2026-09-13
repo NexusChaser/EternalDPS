@@ -14,7 +14,7 @@ las referencias en commits y mensajes sigan valiendo.
 | fase | bloque | tareas | estado |
 |---|---|---|---|
 | 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
-| 1 | Núcleo: contenedor y tubería | 27 | 🔄 8/27 |
+| 1 | Núcleo: contenedor y tubería | 27 | 🔄 21/27 |
 | 2 | Serialización y almacén de archivo | 14 | ⬜ |
 | 3 | **Integración mínima en este juego** | 11 | ⬜ |
 | 4 | Pruebas | 17 | ⬜ |
@@ -136,35 +136,40 @@ confirmadas.**
 
 ### Contenedor `.etm`
 
-- [ ] **CORE-09** `IKeyProvider`: el **juego** aporta las claves, el paquete **no trae ninguna**
+- [x] **CORE-09** `IKeyProvider`: el **juego** aporta las claves, el paquete **no trae ninguna**
       (repo público). El núcleo falla ruidosamente si se le pide firmar sin clave. Nunca una
       cadena literal — aparece haciendo `strings` al binario. → ver `CORE-21..25`
-- [ ] **CORE-10** Escritor del preámbulo: magia `ETM1`, `containerVersion`, flags, longitudes,
+- [x] **CORE-10** Escritor del preámbulo: magia `ETM1`, `containerVersion`, flags, longitudes,
       `serializerId`, lista ordenada de `transformIds`.
-- [ ] **CORE-11** Bloque de metadatos: **`productId`**, `schemaVersion`, `savedAtUtc`,
+- [x] **CORE-11** Bloque de metadatos: **`productId`**, `schemaVersion`, `savedAtUtc`,
       `appVersion`, `slotName`, `playtime`, offsets de miniatura, campos libres del juego.
-- [ ] **CORE-12** Escritura del cuerpo aplicando la cadena de transformaciones **en orden**.
-- [ ] **CORE-13** Firma `HMAC-SHA256` sobre **todo lo anterior, preámbulo incluido** (cierra la
+- [x] **CORE-12** Escritura del cuerpo aplicando la cadena de transformaciones **en orden**.
+- [x] **CORE-13** Firma `HMAC-SHA256` sobre **todo lo anterior, preámbulo incluido** (cierra la
       degradación descrita en §5).
-- [ ] **CORE-14** Lector: parsear preámbulo **sin aplicar ninguna transformación**, y leer
+- [x] **CORE-14** Lector: parsear preámbulo **sin aplicar ninguna transformación**, y leer
       metadatos sin tocar el cuerpo.
-- [ ] **CORE-15** Verificación **en flujo**, sin deserializar el cuerpo (alimenta `VerifyAsync`).
-- [ ] **CORE-16** Registros de `TransformId` y `SerializerId`, con los rangos reservados y la regla
+- [x] **CORE-15** Verificación **en flujo**, sin deserializar el cuerpo (alimenta `VerifyAsync`).
+- [x] **CORE-16** Registros de `TransformId` y `SerializerId`, con los rangos reservados y la regla
       de **no reutilizar nunca un número**.
-- [ ] **CORE-17** Transformación `Deflate` (`0x01`).
-- [ ] **CORE-18** Fachada `EternalDataDriver`: `SaveAsync`, `LoadAsync`, `DeleteAsync`,
+- [x] **CORE-17** Transformación `Deflate` (`0x01`).
+- [x] **CORE-18** Fachada `EternalDataDriver`: `SaveAsync`, `LoadAsync`, `DeleteAsync`,
       `ExistsAsync`, `VerifyAsync`. Orquesta serializador + transformaciones + almacén.
-- [ ] **CORE-19** `ProductIdentity`: el `productId` actual (GUID **congelado de por vida**) más la
+- [x] **CORE-19** `ProductIdentity`: el `productId` actual (GUID **congelado de por vida**) más la
       lista de **identidades heredadas** aceptadas. → sale de `D-02`
-- [ ] **CORE-20** `CanAdopt(bytes)`: comprueba en orden magia → `containerVersion` → `productId` →
+- [x] **CORE-20** `CanAdopt(bytes)`: comprueba en orden magia → `containerVersion` → `productId` →
       camino de migración, **sin deserializar el cuerpo**, y devuelve el motivo cuando dice que no.
-- [ ] **CORE-21** Byte **`keyId`** en el preámbulo, en offset 13. Se reserva **aunque solo exista
+- [x] **CORE-21** Byte **`keyId`** en el preámbulo, en offset 13. Se reserva **aunque solo exista
       una clave**: añadirlo después sería subir la versión del contenedor. → sale de `D-03`
 - [ ] **CORE-22** Conjunto de claves: **escribir siempre con la más nueva, leer con la que declare
       el archivo**. El `IKeyProvider` entrega la actual más las retiradas.
+      *Ya hecho en `CORE-09`:* la interfaz, que firmar con clave no activa falle, que se verifique
+      con la clave que declara el archivo, y que una clave `Rejected` se rechace. *Falta:* que el
+      paquete traiga una implementación de conjunto en vez de que cada juego escriba la suya.
 - [ ] **CORE-23** **Refirmado automático**: un archivo cargado con clave retirada se reescribe con
       la actual en el siguiente guardado. Silencioso, el jugador no hace nada.
 - [ ] **CORE-24** Política de retirada por clave: `Active` → `ReadOnly` → `Warn` → `Rejected`.
+      *Ya hecho en `CORE-09`:* los cuatro estados existen y `ReadOnly` y `Rejected` se respetan.
+      *Falta:* que `Warn` avise en alguna parte — hoy se comporta igual que `ReadOnly` y no dice nada.
 - [ ] **CORE-25** Derivación con **HKDF** en el paquete; el material de entrada lo pone el juego.
 
 ### Consecuencias de las decisiones de `CORE-01..08`
@@ -202,6 +207,21 @@ que volver a razonarlas dentro de tres fases, cuando ya sean contrato.
 
 **Cubierto por 62 pruebas nuevas** (65 en total con las tres de la fase 0), todas en verde, y
 `Eternal.Core` sigue sin referenciar el motor: solo `netstandard`.
+
+### Decisiones tomadas al implementar `CORE-09..21`
+
+| decisión | por qué | reversible | veredicto |
+|---|---|---|---|
+| **Los metadatos usan una codificación binaria fija del núcleo, no el `ISerializer` enchufable** | Son lo que responde «¿este archivo es mío?». Un build tiene que poder responderlo sobre un archivo escrito por otro build cuyo serializador no lleva compilado; si dependieran del serializador, un módulo opcional ausente dejaría el guardado ilegible **y** no identificable, así que ni listarlo ni borrarlo. Rompe el `CanAdopt` de la §10 | **no**, es el formato | **Se queda.** La §5 decía «serializados, comprimidos»: corregido ahí |
+| **Los metadatos no se comprimen** | Son unos cientos de bytes. Comprimirlos no ahorra nada que justifique inflarlos en cada entrada de la lista de ranuras, y lo único grande —la miniatura— ya llega comprimida | no, es el formato | **Se queda** |
+| **La miniatura vive dentro del bloque de metadatos** | Tiene que leerse sin tocar el cuerpo, como el resto del bloque. **Consecuencia:** `metaLen` son 2 bytes, así que el bloque no pasa de 64 KB y ese es el techo real de la miniatura | no, es el formato | **Se queda**, con el límite documentado y con un error claro al superarlo |
+| **Los GUID se escriben en orden RFC 4122**, no en el de `Guid.ToByteArray` | .NET invierte los tres primeros campos. Dentro de .NET da igual porque va y vuelve, pero una herramienta escrita en otro lenguaje leería un `productId` distinto del que dice su forma de texto | no, es el formato | **Se queda.** Cubierto por una prueba de bytes concretos |
+| **`ReadMetadata` no verifica la firma** | Una partida dañada tiene que poder dibujarse en la lista para que el jugador la vea y la borre. Negarse a leer su nombre porque el cuerpo está roto la hace desaparecer de la interfaz y deja al jugador atascado | sí | **Se queda.** Todo lo que actúa sobre el contenido sí verifica antes |
+| **`CanAdopt` no comprueba la firma** | Un archivo de la carpeta anterior del propio juego está firmado con la misma clave y se verificará al cargar. Exigir firma en esta etapa haría que una rotación de clave volviese no adoptables los guardados viejos, que es exactamente lo que la rotación existe para evitar | sí | **Se queda** |
+| **Dos veredictos nuevos en `IntegrityStatus`**: `UnsupportedVersion` y `RejectedKey` | «De una versión más nueva» no es daño y no puede llegar como `IntegrityFailed`, o un build se sentiría con derecho a sobrescribir un guardado del futuro. `RejectedKey` distingue «firma rota» de «firma intacta con clave ya no aceptada» | sí | **Se queda.** El mapeo veredicto→`LoadStatus` está en un solo sitio para que no se desincronicen |
+
+**Cubierto por 54 pruebas nuevas** (119 en total), todas en verde. Incluye la prueba que la §5
+exige explícitamente: **quitar una transformación de la cabecera no pasa la firma**.
 
 ---
 

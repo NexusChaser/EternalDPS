@@ -12,6 +12,18 @@ only ever extended, never changed.
 
 ### Added
 
+- The `.etm` container: preamble, metadata block, transform chain and an HMAC-SHA256 signature over
+  all of it, so that stripping a transform from the header cannot get past verification.
+- Metadata in a fixed built-in encoding, deliberately independent of the pluggable serializer, so a
+  save stays identifiable to a build that lacks the module that wrote it — and readable while its
+  body is corrupt.
+- `IKeyProvider` and key material with a 32-byte floor, four retirement states, and a loud failure
+  when asked to sign without a key. The package ships no key and never will.
+- `DeflateTransform` (`0x01`), plus transform and serializer registries that refuse to hand one
+  identifier to two implementations.
+- `ProductIdentity` and `Adoption.CanAdopt`, so a save survives the product being renamed.
+- `EternalDataDriver`: save, load, delete, exists, verify and read-metadata, turning every failure
+  into a verdict and applying the profile's policy, including recovery from a backup.
 - Core model: `Scope`, `RecordKind`, `SlotId`, `EternalKey` with path composition and record id
   validation, `SaveProfile` with its four presets, and the advisory `ScopeRules` matrix.
 - Load outcomes as values rather than exceptions: `LoadStatus` with its ten verdicts,

@@ -134,7 +134,7 @@ extender, nunca cambiar.
 │ 14   1   transformCount                                     │
 │ 15   n   transformIds[]   1 byte cada una, EN ORDEN         │
 └─────────────────────────────────────────────────────────────┘
-┌─ METADATOS — serializados, comprimidos, NO cifrados ───────┐
+┌─ METADATOS — codificación propia, sin comprimir, NO cifrados ─┐
 │  productId · schemaVersion · savedAtUtc · appVersion         │
 │  slotName · playtime · thumbOffset/thumbLen · campos juego   │
 └─────────────────────────────────────────────────────────────┘
@@ -152,6 +152,23 @@ ranuras con «Nivel 34 · 12 h 20 min» **sin deserializar seis partidas complet
 que casi nadie implementa: deben poder leerse **aunque el cuerpo esté corrupto**, para que una
 partida dañada no desaparezca de la lista y el jugador pueda al menos borrarla. Que no vayan
 cifrados es una concesión consciente: el nivel y el tiempo jugado no son secretos.
+
+> **Corregido al implementar.** Este bloque decía «serializados, comprimidos». Ninguna de las dos
+> cosas resultó correcta y se cambiaron:
+>
+> - **No usan el `ISerializer` del juego, sino una codificación binaria fija del núcleo.** Los
+>   metadatos son lo que responde «¿este archivo es mío?», y un build tiene que poder responderlo
+>   sobre un archivo escrito por otro build cuyo serializador no lleva compilado. Si dependieran
+>   del serializador enchufable, que faltara un módulo opcional dejaría el guardado ilegible **y
+>   además** no identificable, así que ni siquiera se podría listar o borrar. Es justo el caso que
+>   la §10 necesita que funcione.
+> - **No se comprimen.** El bloque son unos cientos de bytes: comprimirlo no ahorra nada que
+>   justifique inflarlo en cada entrada de la lista de ranuras, y lo único grande —la
+>   miniatura— ya llega comprimida como PNG o JPEG.
+>
+> La miniatura vive **dentro** del bloque de metadatos, con `thumbOffset` relativo al inicio del
+> bloque. Consecuencia a tener en cuenta: como `metaLen` son 2 bytes, **el bloque entero no puede
+> pasar de 64 KB**, y en la práctica eso es el techo de la miniatura.
 
 **2. El HMAC cubre el preámbulo, no solo la carga.** Si solo firmara el cuerpo, alguien editaría
 los `transformIds` para declarar «sin cifrado» y se llevaría la protección por delante. Esto
