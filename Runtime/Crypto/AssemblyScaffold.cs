@@ -1,6 +1,6 @@
 namespace NexusChaser.EternalDPS.Crypto
 {
-    // ANDAMIAJE de la fase 0. Se borra en la fase 9, cuando entre la transformacion AES.
+    // Phase 0 SCAFFOLDING. Removed in phase 8, when the AES transform lands.
     internal static class AssemblyScaffold
     {
         internal const string BelongsTo = EternalPackage.PackageName;

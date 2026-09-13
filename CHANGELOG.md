@@ -1,22 +1,29 @@
 # Changelog
 
-Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
-Versionado semántico, con la salvedad de que **la API pública se considera inestable** hasta que
-exista un segundo proyecto consumidor: hasta entonces una versión menor puede romper compilación.
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-El **formato de archivo** no sigue esa salvedad. Desde la versión 1 del contenedor solo se
-extiende, nunca se cambia.
+Semantic versioning applies, with one caveat: **the public API is considered unstable** until a
+second project consumes the package. Until then, a minor release may break compilation.
 
-## [Sin publicar]
+The **file format** is not covered by that caveat. From version 1 of the container onwards it is
+only ever extended, never changed.
 
-### Añadido
-- Esqueleto del paquete: `package.json`, estructura de carpetas y los siete ensamblados
-  (`Core`, `Tooling`, `Serialization.Newtonsoft`, `Crypto`, `Unity`, `Unity.Editor`, `Tests`).
-- `Core` y `Tooling` declarados sin referencias al motor (`noEngineReferences`).
-- `Serialization.Newtonsoft` tras un *version define*: no compila si el paquete de Newtonsoft no
-  está instalado.
-- Documentos de arquitectura y plan de implementación en `Documentation~/`.
+## [Unreleased]
 
-## [0.1.0] — sin publicar
+### Added
 
-Fase 0 del plan de implementación: andamiaje. Todavía **sin código funcional**.
+- Package scaffolding: `package.json`, folder layout and the seven assemblies (`Core`, `Tooling`,
+  `Serialization.Newtonsoft`, `Crypto`, `Unity`, `Unity.Editor`, `Tests`).
+- `Core` and `Tooling` declared without engine references (`noEngineReferences`).
+- `Serialization.Newtonsoft` behind a version define: it is not compiled at all when the
+  Newtonsoft.Json package is absent.
+- Architecture and implementation plan documents under `Documentation~/`.
+
+### Changed
+
+- License moved from MIT to Apache-2.0. MIT does not require stating modifications nor protect the
+  project name; Apache-2.0 does both, and adds an explicit patent grant.
+
+## [0.1.0] - unreleased
+
+Phase 0 of the implementation plan: scaffolding. **No functional code yet.**

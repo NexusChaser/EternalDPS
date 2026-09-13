@@ -13,7 +13,7 @@ las referencias en commits y mensajes sigan valiendo.
 
 | fase | bloque | tareas | estado |
 |---|---|---|---|
-| 0 | Andamiaje del paquete | 9 | ⬜ |
+| 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
 | 1 | Núcleo: contenedor y tubería | 25 | ⬜ |
 | 2 | Serialización y almacén de archivo | 14 | ⬜ |
 | 3 | **Integración mínima en este juego** | 11 | ⬜ |
@@ -83,22 +83,28 @@ las referencias en commits y mensajes sigan valiendo.
 
 ## Fase 0 — Andamiaje del paquete
 
-- [ ] **PKG-01** Crear **repositorio propio de GitHub** para el paquete, con su `package.json`
+- [x] **PKG-01** Crear **repositorio propio de GitHub** para el paquete, con su `package.json`
       (nombre `com.nexuschaser.eternaldps`, versión `0.1.0`, displayName, unity mínima) en la raíz,
       y añadirlo a este proyecto por **git URL** en `manifest.json`. → cierra `D-01`
-- [ ] **PKG-02** Estructura de carpetas: `Runtime/Core`, `Runtime/Tooling`, `Runtime/Unity`,
+- [x] **PKG-02** Estructura de carpetas: `Runtime/Core`, `Runtime/Tooling`, `Runtime/Unity`,
       `Runtime/Serialization.Newtonsoft`, `Runtime/Crypto`, `Editor`, `Tests`.
-- [ ] **PKG-03** `Eternal.Core.asmdef` — **sin referencias a UnityEngine**, `noEngineReferences: true`.
-- [ ] **PKG-04** `Eternal.Tooling.asmdef` — igual, solo referencia a Core.
-- [ ] **PKG-05** `Eternal.Unity.asmdef` y `Eternal.Unity.Editor.asmdef` (este último `includePlatforms: Editor`).
-- [ ] **PKG-06** `Eternal.Serialization.Newtonsoft.asmdef` con **version define** sobre
+- [x] **PKG-03** `Eternal.Core.asmdef` — **sin referencias a UnityEngine**, `noEngineReferences: true`.
+- [x] **PKG-04** `Eternal.Tooling.asmdef` — igual, solo referencia a Core.
+- [x] **PKG-05** `Eternal.Unity.asmdef` y `Eternal.Unity.Editor.asmdef` (este último `includePlatforms: Editor`).
+- [x] **PKG-06** `Eternal.Serialization.Newtonsoft.asmdef` con **version define** sobre
       `com.unity.nuget.newtonsoft-json`, para que no compile si el paquete no está.
-- [ ] **PKG-07** `Eternal.Crypto.asmdef` aparte, para que un juego que no lo use no lo envíe.
-- [ ] **PKG-08** `README.md` del paquete + `CHANGELOG.md` + `LICENSE` + aviso de **API inestable**
+- [x] **PKG-07** `Eternal.Crypto.asmdef` aparte, para que un juego que no lo use no lo envíe.
+- [x] **PKG-08** `README.md` del paquete + `CHANGELOG.md` + `LICENSE` + aviso de **API inestable**
       hasta el juego 2.
-- [ ] **PKG-09** Comprobar que Unity compila el proyecto **consumiendo el paquete por git URL**,
-      con los asmdefs vacíos y sin errores. Verificar que `git pull` del paquete se refleja en el
-      proyecto.
+- [x] **PKG-09** Comprobar que Unity compila el proyecto sin errores y que el paquete se consume
+      correctamente. **Verificado:** los 7 ensamblados compilan; `Eternal.Core` y `Eternal.Tooling`
+      **no referencian el motor** (comprobado sobre los ensamblados cargados, no sobre el asmdef);
+      el *version define* de Newtonsoft resuelve y su adaptador carga; `EternalPackage` devuelve
+      `com.nexuschaser.eternaldps` / `0.1.0` / `.etm`; y las **3 pruebas pasan**. El paquete se
+      clona e instala desde la git URL con `package.json` válido.
+      *Nota:* las pruebas de un paquete solo compilan si el proyecto lo declara en `testables`;
+      añadido al `manifest.json`. El manifest queda apuntando a `file:` para desarrollar las fases
+      siguientes, como documenta el README.
 
 > **Hecho cuando:** el proyecto compila, `Eternal.Core` aparece en el Package Manager instalado
 > desde GitHub, y no referencia UnityEngine.

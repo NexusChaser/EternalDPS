@@ -1,103 +1,186 @@
-# EternalDPS
+# EternalDPS <!-- omit in toc -->
 
-**Eternal Data Persistence System** — sistema de guardado reutilizable para Unity, con un núcleo
-que no depende del motor.
+**Eternal Data Persistence System** — a reusable save system for Unity, built around an
+engine-independent core.
 
-> ⚠️ **API inestable.** Este paquete no congela su API pública hasta que exista un **segundo
-> proyecto consumidor** real. Hasta entonces, cualquier versión menor puede romper compatibilidad
-> de código. El **formato de archivo**, en cambio, sí es contrato desde la versión 1 del
-> contenedor: solo se extiende, nunca se cambia.
+[![](https://img.shields.io/github/v/tag/NexusChaser/EternalDPS?label=version)](https://github.com/NexusChaser/EternalDPS/tags)
+[![](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![](https://img.shields.io/badge/Unity-2022.3+-57b9d3.svg?style=flat&logo=unity)
+![](https://img.shields.io/badge/status-early%20development-orange.svg)
+
+<< [📝 Description](#-description) | [📌 Key Features](#-key-features) | [⚙ Installation](#-installation) | [🏗 Architecture](#-architecture) | [📄 File Format](#-file-format) | [🗺 Roadmap](#-roadmap) | [📜 License](#-license) >>
 
 ---
 
-## Qué es
+> [!WARNING]
+> **This package is under early development and is not ready for production use.**
+>
+> The scaffolding is in place, but there is no functional save code yet. The public API is
+> unstable and will keep changing until a second project consumes the package. The **file
+> format**, once version 1 of the container ships, is a different matter: it will only ever be
+> extended, never changed.
 
-Un guardado tiene tres partes que envejecen distinto: **dónde se escriben los bytes**, **cómo se
-convierte un objeto en bytes** y **qué hay dentro**. EternalDPS se queda con las dos primeras y
-deja la tercera al juego, que es la única que no se puede reutilizar.
+## 📝 Description
 
-- **Contenedor `.etm`** firmado con HMAC-SHA256, con metadatos legibles sin abrir el cuerpo.
-- **Serialización intercambiable** — JSON hoy, binario el día que haga falta, sin romper lo escrito.
-- **Almacenes por plataforma** — archivo, WebGL, Steam Cloud, consola. Asíncronos por diseño.
-- **Ámbitos y ranuras** — máquina / cuenta / partida, con ranuras opcionales.
-- **Herramientas de inspección** sin dependencia del motor, para que cada uno construya su capa visual.
+A save system has three parts that age at different rates: **where the bytes are written**, **how
+an object becomes bytes**, and **what is inside**. EternalDPS owns the first two and deliberately
+leaves the third to your game, because that is the only part nobody can reuse.
 
-## Estructura
+The core has **no reference to `UnityEngine`**. That is not a style choice — it is what lets the
+test suite run in CI without opening Unity, and what would let another engine use the same core by
+supplying its own storage backend and serializer.
 
-| carpeta | ensamblado | depende de Unity |
-|---|---|---|
-| `Runtime/Core` | `Eternal.Core` | **no** |
-| `Runtime/Tooling` | `Eternal.Tooling` | **no** |
-| `Runtime/Serialization.Newtonsoft` | `Eternal.Serialization.Newtonsoft` | **no** |
-| `Runtime/Crypto` | `Eternal.Crypto` | **no** |
-| `Runtime/Unity` | `Eternal.Unity` | sí |
-| `Editor` | `Eternal.Unity.Editor` | sí, solo editor |
-| `Tests` | `Eternal.Tests` | sí, solo editor |
+## 📌 Key Features
 
-Que `Core` y `Tooling` no referencien `UnityEngine` **no es un detalle de estilo**: es lo que
-permite ejecutar las pruebas en CI sin abrir Unity, y lo que permitiría usar el núcleo desde otro
-motor aportando su propio almacén y su propio serializador.
+- **Signed container (`.etm`)** — HMAC-SHA256 over the whole file, header included, so tampering
+  and corruption are both detected.
+- **Metadata readable without opening the body** — list six save slots with level and playtime
+  without deserializing six full saves, and keep a damaged save visible so the player can delete
+  it.
+- **Swappable serialization** — JSON today, binary later, without breaking files already written.
+  The container records which serializer produced the body.
+- **Pluggable byte transforms** — compression and encryption are ordered, self-describing steps.
+  Files written before a transform existed still load after you add it.
+- **Async by design** — WebGL flushes to IndexedDB asynchronously and console save APIs are async
+  too. A synchronous API could never be correct on those platforms.
+- **Scopes and slots** — machine / account / playthrough, with slots optional. A game that needs
+  one save never learns that slots exist.
+- **Engine-agnostic tooling** — inspection, editing and repacking live outside Unity, so every
+  engine can build its own visual layer on the same public API.
 
-Los ensamblados opcionales usan **version defines**: si el paquete del que dependen no está
-instalado, ni siquiera se compilan. Un proyecto que no quiera Newtonsoft no lo arrastra.
+## ⚙ Installation
 
-## Instalación
+### Unity Package Manager (Git URL)
 
-Package Manager → *Add package from git URL*:
+1. Open **Window → Package Manager**
+2. Click **+** → **Add package from git URL…**
+3. Enter the URL:
 
 ```
 https://github.com/NexusChaser/EternalDPS.git
 ```
 
-O en `Packages/manifest.json`:
+Or add it to `Packages/manifest.json` directly:
 
 ```json
-"com.nexuschaser.eternaldps": "https://github.com/NexusChaser/EternalDPS.git"
+{
+  "dependencies": {
+    "com.nexuschaser.eternaldps": "https://github.com/NexusChaser/EternalDPS.git"
+  }
+}
 ```
 
-Para fijar una versión concreta, añade la etiqueta: `...EternalDPS.git#v0.1.0`.
+To pin a version, append the tag: `...EternalDPS.git#v0.1.0`
 
-### Mientras se desarrolla el propio paquete
+### Running the package tests
 
-Un paquete instalado por git URL vive en `Library/PackageCache` y es **de solo lectura**. Para
-trabajar sobre él, apunta a la copia local:
+Package tests only compile when the consuming project opts in. Add the package to `testables`:
+
+```json
+{
+  "testables": ["com.nexuschaser.eternaldps"]
+}
+```
+
+### Working on the package itself
+
+A package installed from a Git URL lives in `Library/PackageCache` and is **read-only**. To develop
+against a local clone, point the manifest at it instead:
 
 ```json
 "com.nexuschaser.eternaldps": "file:../../EternalDPS"
 ```
 
-La ruta es relativa a la carpeta `Packages/` del proyecto. Se vuelve a la git URL al consumirlo.
+The path is relative to the project's `Packages/` folder.
 
-## Reglas que no se negocian
+## 🏗 Architecture
 
-Están razonadas en `Documentation~/Architecture.md`. En resumen:
+| Folder | Assembly | Depends on Unity |
+| --- | --- | --- |
+| `Runtime/Core` | `Eternal.Core` | **no** |
+| `Runtime/Tooling` | `Eternal.Tooling` | **no** |
+| `Runtime/Serialization.Newtonsoft` | `Eternal.Serialization.Newtonsoft` | **no** |
+| `Runtime/Crypto` | `Eternal.Crypto` | **no** |
+| `Runtime/Unity` | `Eternal.Unity` | yes |
+| `Editor` | `Eternal.Unity.Editor` | editor only |
+| `Tests` | `Eternal.Tests` | editor only |
 
-1. **En este repositorio no vive ninguna clave.** Es público. El material lo aporta cada juego a
-   través de `IKeyProvider`, desde su propio repositorio privado o desde un secreto de CI. Lo que
-   sí pone el paquete es el **generador**: el azar no se improvisa por proyecto.
-2. **Nunca se reutiliza un identificador** de transformación, de serializador o de clave.
-3. **Los archivos dorados de pruebas no se tocan.** Cada cambio de contenedor añade uno nuevo.
-4. **`Core` y `Tooling` no pueden referenciar `UnityEngine`.** Si algún día el CLI deja de
-   compilar, es que alguien rompió esta regla.
+Optional assemblies sit behind **version defines**: if the package they depend on is not installed,
+they are not compiled at all. A project that does not want Newtonsoft.Json never pulls it in.
 
-## Documentación
+## 📄 File Format
 
-- `Documentation~/Architecture.md` — qué se construye y por qué.
-- `Documentation~/ImplementationPlan.md` — en qué orden y cuándo está hecho.
+Saves are written as `.etm` files:
 
-## Licencia
+```
+PREAMBLE   magic "ETM1" · container version · flags · lengths
+           serializer id · key id · ordered transform ids
+METADATA   product id · schema version · timestamp · app version · slot name · …
+BODY       serialized, then passed through the transform chain
+SIGNATURE  HMAC-SHA256 over everything above
+```
 
-**Apache License 2.0.** Ver `LICENSE` y `NOTICE`.
+Three properties fall out of that layout:
 
-Se eligio sobre MIT porque hace exigible lo que el proyecto pide y MIT no:
+- The **metadata block is not encrypted and sits outside the body**, so a save can be identified
+  and listed without decrypting anything — and stays readable when the body is damaged.
+- The **signature covers the preamble**, not just the payload. Editing the transform list to claim
+  "no encryption" invalidates the file.
+- The **serializer id** means a build that writes binary keeps reading JSON files written by
+  earlier versions.
 
-- **§4(b)** obliga a que todo archivo modificado lleve un aviso visible de que fue cambiado.
-- **§4(c)** obliga a conservar los avisos de copyright y atribucion originales.
-- **§4(d)** obliga a reproducir el contenido del archivo `NOTICE`.
-- **§6** no cede las marcas: nadie puede usar el nombre del proyecto ni el del autor para
-  respaldar lo suyo.
+### Keys
 
-Ademas incluye cesion expresa de patentes, cosa que MIT no tiene.
+**This repository contains no keys, and it never will.** It is public: any key shipped here would
+be a published key, and the signature would protect nothing.
 
-Puedes usarlo y modificarlo en proyectos comerciales y no comerciales. Lo unico que se pide a
-cambio es que la atribucion viaje con el codigo y que se declare lo que hayas cambiado.
+Each game supplies its own key material through `IKeyProvider`, from its own private repository or
+a CI secret. What the package provides is the **generator** and the derivation — randomness is not
+something each project should improvise.
+
+Keys are versioned rather than permanent. The container records which key signed a file, so a
+leaked key can be rotated out in a patch while existing saves keep loading and silently re-sign
+themselves with the new one.
+
+> [!NOTE]
+> Local save protection is obfuscation, not security. The key lives in the shipped binary, so a
+> determined attacker will extract it. What this design buys is that a *published* key stops being
+> useful after the next patch, and that corruption is always detected.
+
+## 🗺 Roadmap
+
+| Phase | | Status |
+| --- | --- | --- |
+| 0 | Package scaffolding | 🟨 in progress |
+| 1 | Core: container and transform pipeline | ⬜ |
+| 2 | Newtonsoft adapter and file store | ⬜ |
+| 3 | Test suite, golden files, store conformance | ⬜ |
+| 4 | WebGL store | ⬜ |
+| 5 | Engine-agnostic tooling | ⬜ |
+| 6 | Unity editor windows | ⬜ |
+| 7 | Slots and catalog | ⬜ |
+| 8 | AES transform | ⬜ |
+| 9 | CLI | ⬜ |
+| 10 | Steam Cloud (Auto-Cloud and Cloud API) | ⬜ |
+| 11 | Binary serializer | ⬜ |
+
+## 🤝 Contributing
+
+Issues and pull requests are welcome. Two rules matter more than the rest:
+
+1. **`Eternal.Core` and `Eternal.Tooling` must never reference `UnityEngine`.** If the CLI stops
+   compiling, that rule was broken.
+2. **Identifiers are never reused** — not transform ids, not serializer ids, not key ids. Saves
+   already written in the wild depend on them.
+
+## 📜 License
+
+Licensed under the **Apache License, Version 2.0**. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+You may use and modify it in commercial and non-commercial projects. In exchange, the license
+requires that attribution travels with the code (§4c, §4d), that modified files say they were
+modified (§4b), and that the project and author names are not used to endorse derived work (§6).
+
+## Author
+
+**Nexus Chaser** — [@NexusChaser](https://github.com/NexusChaser)

@@ -1,8 +1,7 @@
 namespace NexusChaser.EternalDPS.Tooling
 {
-    // ANDAMIAJE de la fase 0. Solo existe para que el ensamblado se compile de verdad y el
-    // cableado quede verificado en vez de supuesto. Se borra en la fase 6, cuando entre
-    // EternalDocument.
+    // Phase 0 SCAFFOLDING. It exists only so the assembly actually compiles and the wiring is
+    // verified rather than assumed. Removed in phase 5, when EternalDocument lands.
     internal static class AssemblyScaffold
     {
         internal const string BelongsTo = EternalPackage.PackageName;

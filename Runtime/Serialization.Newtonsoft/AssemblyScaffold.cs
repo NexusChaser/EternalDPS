@@ -2,10 +2,10 @@ using Newtonsoft.Json;
 
 namespace NexusChaser.EternalDPS.Serialization
 {
-    // ANDAMIAJE de la fase 0, pero este gana algo por su cuenta: toca un tipo de Newtonsoft a
-    // proposito. Si el version define ETERNAL_NEWTONSOFT o la referencia al ensamblado
-    // estuvieran mal puestos, esto no compilaria y nos enterariamos ahora y no en la fase 2.
-    // Se borra cuando entre el adaptador de verdad (SER-01).
+    // Phase 0 SCAFFOLDING, but this one earns its keep: it deliberately touches a Newtonsoft
+    // type. If the ETERNAL_NEWTONSOFT version define or the assembly reference were wrong, this
+    // would fail to compile and we would find out now instead of in phase 2.
+    // Removed when the real adapter lands.
     internal static class AssemblyScaffold
     {
         internal static string Probe()

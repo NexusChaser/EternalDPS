@@ -1,24 +1,24 @@
 namespace NexusChaser.EternalDPS
 {
     /// <summary>
-    /// Datos del propio paquete. Vive en el nucleo a proposito: es el unico sitio al que
-    /// llegan todos los demas ensamblados.
+    /// Facts about the package itself. It lives in the core on purpose: this is the one assembly
+    /// every other one can reach.
     /// </summary>
     public static class EternalPackage
     {
-        /// <summary>Identificador UPM. Debe coincidir con el de package.json.</summary>
+        /// <summary>UPM identifier. Must match the one in package.json.</summary>
         public const string PackageName = "com.nexuschaser.eternaldps";
 
         /// <summary>
-        /// Version del paquete. Se mantiene a mano en sincronia con package.json porque el
-        /// nucleo no puede leerlo: eso exigiria UnityEditor, y este ensamblado no referencia
-        /// el motor. Hay una prueba que comprueba que los dos numeros coinciden.
+        /// Package version, kept in sync with package.json by hand. The core cannot read the
+        /// manifest itself: that would require UnityEditor, and this assembly deliberately has no
+        /// engine references. A test asserts that the two numbers still match.
         /// </summary>
         public const string Version = "0.1.0";
 
         /// <summary>
-        /// Extension de los archivos de guardado. Forma parte del contrato publico: una vez
-        /// publicado un juego, no se cambia.
+        /// Extension used by save files. Part of the public contract: once a game ships, it does
+        /// not change.
         /// </summary>
         public const string FileExtension = ".etm";
     }

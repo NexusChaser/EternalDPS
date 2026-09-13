@@ -4,9 +4,9 @@ using UnityEditor.PackageManager;
 namespace NexusChaser.EternalDPS.Tests
 {
     /// <summary>
-    /// Primera prueba del paquete. Comprueba lo unico que hay que comprobar en la fase 0: que el
-    /// andamiaje esta bien montado y que la version escrita a mano en el nucleo no se ha quedado
-    /// atras respecto a package.json.
+    /// The package's first tests. They cover the only thing worth covering in phase 0: that the
+    /// scaffolding resolves, and that the version written by hand in the core has not drifted away
+    /// from package.json.
     /// </summary>
     public class PackageManifestTests
     {
@@ -14,25 +14,25 @@ namespace NexusChaser.EternalDPS.Tests
             PackageInfo.FindForAssembly(typeof(EternalPackage).Assembly);
 
         [Test]
-        public void El_nucleo_se_resuelve_como_paquete()
+        public void Core_resolves_as_a_package()
         {
-            Assert.IsNotNull(Package, "Eternal.Core no pertenece a ningun paquete resuelto.");
+            Assert.IsNotNull(Package, "Eternal.Core does not belong to any resolved package.");
             Assert.AreEqual(EternalPackage.PackageName, Package.name);
         }
 
         [Test]
-        public void La_version_del_nucleo_coincide_con_package_json()
+        public void Core_version_matches_package_json()
         {
-            // Se mantienen a mano porque el nucleo no puede leer package.json: hacerlo exigiria
-            // UnityEditor, y Eternal.Core no referencia el motor a proposito. Esta prueba es lo
-            // que evita que se separen sin que nadie se entere.
+            // These are kept in sync by hand because the core cannot read package.json: doing so
+            // would require UnityEditor, and Eternal.Core deliberately has no engine references.
+            // This test is what stops the two from drifting apart unnoticed.
             Assert.AreEqual(Package.version, EternalPackage.Version);
         }
 
         [Test]
-        public void La_extension_de_archivo_es_la_del_contrato()
+        public void File_extension_is_the_one_in_the_contract()
         {
-            // Forma parte del formato publico. Si alguien la cambia, que sea a sabiendas.
+            // Part of the public file format. If anyone changes it, let it be deliberate.
             Assert.AreEqual(".etm", EternalPackage.FileExtension);
         }
     }

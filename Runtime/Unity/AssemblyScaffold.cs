@@ -2,13 +2,13 @@ using UnityEngine;
 
 namespace NexusChaser.EternalDPS.Unity
 {
-    // ANDAMIAJE de la fase 0. Toca UnityEngine a proposito: comprueba que ESTE ensamblado si
-    // referencia el motor, al reves que Core y Tooling. Se borra en la fase 2.
+    // Phase 0 SCAFFOLDING. It touches UnityEngine on purpose: this proves THIS assembly does
+    // reference the engine, unlike Core and Tooling. Removed in phase 2.
     internal static class AssemblyScaffold
     {
         internal static string Describe()
         {
-            return EternalPackage.PackageName + " sobre " + Application.platform;
+            return EternalPackage.PackageName + " on " + Application.platform;
         }
     }
 }

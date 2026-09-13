@@ -2,7 +2,7 @@ using UnityEditor;
 
 namespace NexusChaser.EternalDPS.Unity.Editor
 {
-    // ANDAMIAJE de la fase 0. Se borra en la fase 7, cuando entren las ventanas.
+    // Phase 0 SCAFFOLDING. Removed in phase 6, when the editor windows land.
     internal static class AssemblyScaffold
     {
         internal static bool IsCompiling => EditorApplication.isCompiling;
