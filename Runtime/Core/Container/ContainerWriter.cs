@@ -169,6 +169,69 @@ namespace NexusChaser.EternalDPS.Container
         }
 
         /// <summary>
+        /// Rewrites a container's signature with the current key, leaving every byte of its
+        /// contents alone.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This is how a save moves off a retired key without the player doing anything. Nothing is
+        /// decoded, decompressed or re-serialised: the preamble, the metadata and the body are the
+        /// same bytes afterwards, and only the key identifier and the signature change.
+        /// </para>
+        /// <para>
+        /// <strong>It verifies first, and that is not optional.</strong> Re-signing without checking
+        /// would take a file somebody had edited and hand it back correctly signed with the current
+        /// key — laundering exactly what the signature exists to catch.
+        /// </para>
+        /// </remarks>
+        /// <param name="file">The container as it is on disk.</param>
+        /// <param name="keys">Where the current key comes from.</param>
+        /// <param name="resigned">The rewritten container. Null when nothing was rewritten.</param>
+        /// <param name="report">What the verification found.</param>
+        /// <returns>
+        /// True when a rewritten container was produced. False when it did not verify, or when it
+        /// was already signed with the current key and there was nothing to do.
+        /// </returns>
+        public static bool TryResign(byte[] file, IKeyProvider keys, out byte[] resigned, out IntegrityReport report)
+        {
+            resigned = null;
+            report = ContainerReader.Verify(file, keys);
+
+            if (!report.IsValid)
+            {
+                return false;
+            }
+
+            if (keys == null)
+            {
+                return false;
+            }
+
+            var current = keys.GetSigningKey();
+
+            if (current == null || !current.CanSign)
+            {
+                throw new EternalKeyMissingException(
+                    "Re-signing needs an active key and the provider offered none.");
+            }
+
+            ContainerReader.TryReadPreamble(file, out var preamble, out _);
+
+            if (preamble.KeyId == current.Id)
+            {
+                return false;
+            }
+
+            var rewritten = (byte[])file.Clone();
+            rewritten[ContainerFormat.OffsetKeyId] = current.Id;
+
+            Sign(rewritten, preamble.SignatureOffset, current);
+
+            resigned = rewritten;
+            return true;
+        }
+
+        /// <summary>
         /// Signs everything written so far and appends the result.
         /// </summary>
         /// <remarks>

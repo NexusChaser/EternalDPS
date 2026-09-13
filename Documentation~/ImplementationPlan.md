@@ -14,7 +14,7 @@ las referencias en commits y mensajes sigan valiendo.
 | fase | bloque | tareas | estado |
 |---|---|---|---|
 | 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
-| 1 | Núcleo: contenedor y tubería | 27 | 🔄 21/27 |
+| 1 | Núcleo: contenedor y tubería | 27 | ✅ 27/27 |
 | 2 | Serialización y almacén de archivo | 14 | ⬜ |
 | 3 | **Integración mínima en este juego** | 11 | ⬜ |
 | 4 | Pruebas | 17 | ⬜ |
@@ -160,28 +160,23 @@ confirmadas.**
       camino de migración, **sin deserializar el cuerpo**, y devuelve el motivo cuando dice que no.
 - [x] **CORE-21** Byte **`keyId`** en el preámbulo, en offset 13. Se reserva **aunque solo exista
       una clave**: añadirlo después sería subir la versión del contenedor. → sale de `D-03`
-- [ ] **CORE-22** Conjunto de claves: **escribir siempre con la más nueva, leer con la que declare
+- [x] **CORE-22** Conjunto de claves: **escribir siempre con la más nueva, leer con la que declare
       el archivo**. El `IKeyProvider` entrega la actual más las retiradas.
-      *Ya hecho en `CORE-09`:* la interfaz, que firmar con clave no activa falle, que se verifique
-      con la clave que declara el archivo, y que una clave `Rejected` se rechace. *Falta:* que el
-      paquete traiga una implementación de conjunto en vez de que cada juego escriba la suya.
-- [ ] **CORE-23** **Refirmado automático**: un archivo cargado con clave retirada se reescribe con
+- [x] **CORE-23** **Refirmado automático**: un archivo cargado con clave retirada se reescribe con
       la actual en el siguiente guardado. Silencioso, el jugador no hace nada.
-- [ ] **CORE-24** Política de retirada por clave: `Active` → `ReadOnly` → `Warn` → `Rejected`.
-      *Ya hecho en `CORE-09`:* los cuatro estados existen y `ReadOnly` y `Rejected` se respetan.
-      *Falta:* que `Warn` avise en alguna parte — hoy se comporta igual que `ReadOnly` y no dice nada.
-- [ ] **CORE-25** Derivación con **HKDF** en el paquete; el material de entrada lo pone el juego.
+- [x] **CORE-24** Política de retirada por clave: `Active` → `ReadOnly` → `Warn` → `Rejected`.
+- [x] **CORE-25** Derivación con **HKDF** en el paquete; el material de entrada lo pone el juego.
 
 ### Consecuencias de las decisiones de `CORE-01..08`
 
 Salen de la tabla de abajo. No son decisiones nuevas: son los cabos que dejaron abiertos.
 
-- [ ] **CORE-26** El driver **comprueba conflictos de clave al registrarlas** y falla ahí mismo.
+- [x] **CORE-26** El driver **comprueba conflictos de clave al registrarlas** y falla ahí mismo.
       Dos claves con el mismo ámbito, ranura e id pero **distinto tipo** apuntan al mismo archivo,
       porque la ruta no codifica el tipo. Ya existe `EternalKey.ConflictsWith`; esto es lo que lo
       llama. Tiene que reventar en el **primer segundo de la primera ejecución**, no meses después
       con una partida pisada. → cierra la decisión **2**
-- [ ] **CORE-27** Aviso —**no** bloqueo— cuando una clave usa una combinación de ámbito y tipo
+- [x] **CORE-27** Aviso —**no** bloqueo— cuando una clave usa una combinación de ámbito y tipo
       fuera de la matriz de la §3 (`ScopeRules.IsMeaningful`). Una vez por clave, al registrarla.
       Guardar **progreso con ámbito de máquina** se acepta, pero se dice: es progreso que se
       evapora al cambiar de ordenador. → cierra la decisión **6**
@@ -189,6 +184,11 @@ Salen de la tabla de abajo. No son decisiones nuevas: son los cabos que dejaron 
 > **Hecho cuando:** se puede escribir y volver a leer un `byte[]` con un `ISerializer` y un
 > `IStore` falsos en memoria, el HMAC detecta un bit cambiado, y `CanAdopt` reconoce un archivo
 > escrito bajo otro nombre de producto.
+>
+> ✅ **Las tres cosas, comprobadas:** ida y vuelta con dobles en memoria; un bit cambiado se detecta
+> en las cuatro regiones del contenedor, preámbulo incluido; y un guardado escrito bajo otra
+> identidad de producto se reconoce como propio al declararla como heredada. **150 pruebas en
+> verde**, y `Eternal.Core` sigue sin referenciar el motor.
 
 ### Decisiones tomadas al implementar `CORE-01..08`
 
@@ -222,6 +222,24 @@ que volver a razonarlas dentro de tres fases, cuando ya sean contrato.
 
 **Cubierto por 54 pruebas nuevas** (119 en total), todas en verde. Incluye la prueba que la §5
 exige explícitamente: **quitar una transformación de la cabecera no pasa la firma**.
+
+### Decisiones tomadas al implementar `CORE-22..27`
+
+| decisión | por qué | reversible | veredicto |
+|---|---|---|---|
+| **`EternalKeyRing` impone tres invariantes**: ningún id repetido, exactamente una clave activa, y la activa es la de id más alto | Dos claves activas harían que cuál firma dependa del orden en que se pasaron — de los que funcionan en una máquina y no en otra. Que la rotación solo avance es lo que permite a `TOOL-11` tomar «el siguiente id libre» sin ambigüedad | sí | **Se queda.** Todo se comprueba al construir, así que un anillo mal montado falla al arrancar y no cuando a un jugador no le carga la partida |
+| **`TryResign` verifica antes de refirmar** | Sin eso, refirmar cogería un archivo que alguien editó y lo devolvería correctamente firmado con la clave actual: **blanquearía exactamente lo que la firma existe para detectar**. Es el error que convierte la rotación en un agujero | **no**, es de seguridad | **Se queda.** Con prueba dedicada |
+| **`AutoResign` activado por defecto**: se refirma al **leer**, no solo al guardar | El plan decía «en el siguiente guardado», que es gratis porque todo guardado usa ya la clave actual. Pero eso deja la clave filtrada sirviendo contra todo lo que el jugador solo lee — progreso de cuenta que cambia una vez al mes. Refirmar al leer lo cierra en el siguiente arranque | sí, es una opción | **Se queda encendido**, y se puede apagar. Es **más** de lo que pedía el plan, dicho aquí para que se pueda discutir |
+| **Un fallo al refirmar nunca hace fallar la carga** | Refirmar es mantenimiento. Un registro que cargó bien no puede volver como error porque la limpieza posterior no funcionase | sí | **Se queda**, con aviso en el log |
+| **`IntegrityReport.SigningKeyState`** nuevo | Sin él, `Warn` se comporta idéntico a `ReadOnly` y la etapa no significa nada. Ahora el informe dice con qué estado de clave verificó, y el driver avisa | sí | **Se queda** |
+| **La comprobación de conflictos también corre en caliente**, no solo sobre los registros declarados | Declararlos por adelantado solo adelanta el fallo al arranque. Si no se declaran, el choque se detecta igual la primera vez que se usa cada registro — un diccionario y un candado, coste nulo | sí | **Se queda** |
+| **El aviso de la matriz sale una vez por registro**, no en cada llamada | Un aviso que se repite en cada guardado es un aviso que nadie lee | sí | **Se queda** |
+
+**HKDF está comprobado contra los vectores del Apéndice A del RFC 5869** —los tres casos, incluido
+el de entradas largas que obliga a encadenar tres bloques—. Una primitiva criptográfica escrita a
+mano que nadie contrastó con la especificación es peor que no tenerla: parece que funciona.
+
+**Cubierto por 31 pruebas nuevas** (150 en total), todas en verde.
 
 ---
 

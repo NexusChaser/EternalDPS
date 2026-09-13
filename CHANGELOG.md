@@ -12,6 +12,17 @@ only ever extended, never changed.
 
 ### Added
 
+- `EternalKeyRing`: one active key plus every retired one, refusing a ring with two active keys, a
+  repeated identifier, or an active key that is not the highest — rotation only moves forward.
+- HKDF over SHA-256 (RFC 5869), verified against the known-answer vectors in the RFC's Appendix A.
+  The derivation is frozen: changing it would invalidate every signature already written.
+- Automatic re-signing. A save carrying a retired key is moved onto the current one without the
+  player doing anything, and without a single byte of its contents changing. It verifies first, so
+  a tampered file cannot be laundered into a validly signed one.
+- Key retirement in four stages, with `Warn` now actually warning instead of behaving like
+  `ReadOnly`.
+- A startup check that refuses two records resolving to the same file, and a warning for scope and
+  kind pairings the design does not account for.
 - The `.etm` container: preamble, metadata block, transform chain and an HMAC-SHA256 signature over
   all of it, so that stripping a transform from the header cannot get past verification.
 - Metadata in a fixed built-in encoding, deliberately independent of the pluggable serializer, so a

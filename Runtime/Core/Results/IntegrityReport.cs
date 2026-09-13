@@ -1,3 +1,5 @@
+using NexusChaser.EternalDPS.Keys;
+
 namespace NexusChaser.EternalDPS
 {
     /// <summary>The four regions of an <c>.etm</c> container, in the order they appear.</summary>
@@ -88,8 +90,10 @@ namespace NexusChaser.EternalDPS
             byte keyId,
             int declaredMetadataLength,
             int declaredBodyLength,
-            long actualLength)
+            long actualLength,
+            KeyState? signingKeyState)
         {
+            SigningKeyState = signingKeyState;
             Status = status;
             FailedRegion = failedRegion;
             Detail = detail;
@@ -127,6 +131,23 @@ namespace NexusChaser.EternalDPS
         /// <summary>Bytes actually available. Compare against the declared lengths.</summary>
         public long ActualLength { get; }
 
+        /// <summary>
+        /// The state of the key that signed the file, when the key was found. Null otherwise.
+        /// </summary>
+        /// <remarks>
+        /// A file signed with a key in <see cref="KeyState.Warn"/> verifies perfectly well — that is
+        /// the whole point of retiring a key in stages — but the fact has to reach somebody, or the
+        /// stage is indistinguishable from <see cref="KeyState.ReadOnly"/> and does nothing.
+        /// </remarks>
+        public KeyState? SigningKeyState { get; }
+
+        /// <summary>
+        /// True when the file verified but was signed with a key on its way out. Not a failure:
+        /// a prompt to re-sign, which happens by itself on the next save.
+        /// </summary>
+        public bool SignedWithRetiringKey =>
+            IsValid && SigningKeyState.HasValue && SigningKeyState.Value != KeyState.Active;
+
         /// <summary>True only for <see cref="IntegrityStatus.Valid"/>.</summary>
         public bool IsValid => Status == IntegrityStatus.Valid;
 
@@ -136,7 +157,8 @@ namespace NexusChaser.EternalDPS
             byte keyId,
             int declaredMetadataLength,
             int declaredBodyLength,
-            long actualLength)
+            long actualLength,
+            KeyState? signingKeyState = null)
         {
             return new IntegrityReport(
                 IntegrityStatus.Valid,
@@ -146,7 +168,8 @@ namespace NexusChaser.EternalDPS
                 keyId,
                 declaredMetadataLength,
                 declaredBodyLength,
-                actualLength);
+                actualLength,
+                signingKeyState);
         }
 
         /// <summary>A failing report, with whatever was read before the failure.</summary>
@@ -158,7 +181,8 @@ namespace NexusChaser.EternalDPS
             byte keyId = 0,
             int declaredMetadataLength = 0,
             int declaredBodyLength = 0,
-            long actualLength = 0)
+            long actualLength = 0,
+            KeyState? signingKeyState = null)
         {
             return new IntegrityReport(
                 status,
@@ -168,7 +192,8 @@ namespace NexusChaser.EternalDPS
                 keyId,
                 declaredMetadataLength,
                 declaredBodyLength,
-                actualLength);
+                actualLength,
+                signingKeyState);
         }
 
         /// <summary>

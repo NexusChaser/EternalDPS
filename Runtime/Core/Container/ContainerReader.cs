@@ -101,7 +101,8 @@ namespace NexusChaser.EternalDPS.Container
             }
 
             return IntegrityReport.Valid(
-                preamble.Version, preamble.KeyId, preamble.MetadataLength, preamble.BodyLength, available);
+                preamble.Version, preamble.KeyId, preamble.MetadataLength, preamble.BodyLength, available,
+                key.State);
         }
 
         /// <summary>
