@@ -14,7 +14,7 @@ las referencias en commits y mensajes sigan valiendo.
 | fase | bloque | tareas | estado |
 |---|---|---|---|
 | 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
-| 1 | Núcleo: contenedor y tubería | 25 | ⬜ |
+| 1 | Núcleo: contenedor y tubería | 25 | 🔄 8/25 |
 | 2 | Serialización y almacén de archivo | 14 | ⬜ |
 | 3 | **Integración mínima en este juego** | 11 | ⬜ |
 | 4 | Pruebas | 17 | ⬜ |
@@ -115,22 +115,22 @@ las referencias en commits y mensajes sigan valiendo.
 
 ### Tipos base
 
-- [ ] **CORE-01** `Scope` (Machine · Account · Slot), `RecordKind` (Settings · Progress · Session).
-- [ ] **CORE-02** `SlotId` — identificador **opaco y estable** (GUID), con `SlotId.Default`.
+- [x] **CORE-01** `Scope` (Machine · Account · Slot), `RecordKind` (Settings · Progress · Session).
+- [x] **CORE-02** `SlotId` — identificador **opaco y estable** (GUID), con `SlotId.Default`.
       Nombre y orden de visualización son datos aparte, nunca el id.
-- [ ] **CORE-03** `EternalKey = (Scope, RecordKind, RecordId, SlotId)` + composición de ruta con
+- [x] **CORE-03** `EternalKey = (Scope, RecordKind, RecordId, SlotId)` + composición de ruta con
       colapso de segmentos ausentes.
-- [ ] **CORE-04** `SaveProfile`: `Lifetime`, `Cloud`, `OnMigrationFailure`, `OnIntegrityFailure`,
+- [x] **CORE-04** `SaveProfile`: `Lifetime`, `Cloud`, `OnMigrationFailure`, `OnIntegrityFailure`,
       `Conflict`, `Backups`.
-- [ ] **CORE-05** `LoadResult` como resultado cerrado con los nueve veredictos de la §12 de la
+- [x] **CORE-05** `LoadResult` como resultado cerrado con los nueve veredictos de la §12 de la
       arquitectura. **No excepciones** para casos esperados.
-- [ ] **CORE-06** `IntegrityReport` (veredicto + qué región falló + tamaños leídos).
+- [x] **CORE-06** `IntegrityReport` (veredicto + qué región falló + tamaños leídos).
 
 ### Interfaces
 
-- [ ] **CORE-07** `ISerializer` (con `FormatId`), `IDocumentSerializer` (opcional, árbol editable),
+- [x] **CORE-07** `ISerializer` (con `FormatId`), `IDocumentSerializer` (opcional, árbol editable),
       `IByteTransform` (con `TransformId` e inversa), `IClock`, `IEternalLog`.
-- [ ] **CORE-08** `IStore` **asíncrono** + `StoreCapabilities`
+- [x] **CORE-08** `IStore` **asíncrono** + `StoreCapabilities`
       (`AtomicReplace`, `List`, `Delete`, `RandomAccess`).
 
 ### Contenedor `.etm`
@@ -169,6 +169,23 @@ las referencias en commits y mensajes sigan valiendo.
 > **Hecho cuando:** se puede escribir y volver a leer un `byte[]` con un `ISerializer` y un
 > `IStore` falsos en memoria, el HMAC detecta un bit cambiado, y `CanAdopt` reconoce un archivo
 > escrito bajo otro nombre de producto.
+
+### Decisiones tomadas al implementar `CORE-01..08`
+
+Seis cosas que el plan no decía y hubo que decidir. Se anotan aquí para que se puedan discutir
+ahora y no dentro de tres fases, cuando ya sean contrato.
+
+| decisión | por qué | reversible |
+|---|---|---|
+| **`RecordId` se pasa a minúsculas** y solo admite `[a-z0-9_-]` empezando por letra o dígito | Windows no distingue mayúsculas y Linux sí: `MySave` y `mysave` serían un archivo en una plataforma y dos en la otra. Plegar la caja lo hace un archivo en todas. El alfabeto estrecho cierra además el recorrido de rutas (`../`), los puntos y espacios finales, y las diferencias de normalización Unicode | sí, hasta que se publique |
+| **El `RecordKind` no aparece en la ruta** | Es lo que dice la §9 de la arquitectura: `account/prefs.etm` y `account/progress.etm` se distinguen por el id, no por el tipo. El tipo elige la **política**, no el sitio. Consecuencia: el id debe ser único dentro del ámbito aunque cambie el tipo, y `EternalKey.ConflictsWith` es lo que lo detecta | sí |
+| **`SlotId` se colapsa a `Default` cuando el ámbito no es `Slot`** | Si no, dos claves que apuntan al mismo archivo compararían distinto. Es el bug silencioso de toda caché con clave compuesta | sí |
+| **`EternalNode`**, un árbol propio para `IDocumentSerializer` | Sin un tipo concreto la interfaz no se puede llamar y la tarea sería vacía. Devolver `object` sería peor. Los números guardan su **texto original**: pasar un id de 64 bits por un `double` lo redondea y lo reescribe distinto — abrir un guardado en una herramienta y cerrarlo sin tocar nada tiene que dar los mismos bytes. **Pendiente:** no conserva el orden de los miembros; revisar en la fase 6 | sí, nadie lo consume aún |
+| **`IStore.FlushAsync`** añadido a la interfaz | La §14 exige forzar `FS.syncfs()` en WebGL. Sin un método en el contrato, el driver no tiene dónde llamarlo y el volcado se queda fuera de la abstracción | no, es la interfaz |
+| **`ScopeRules` es informativo, no bloquea** | La matriz de la §3 tiene seis casillas con sentido, pero un juego puede tener un motivo que la matriz no previó. El sistema lo señala y se aparta | sí |
+
+**Cubierto por 62 pruebas nuevas** (65 en total con las tres de la fase 0), todas en verde, y
+`Eternal.Core` sigue sin referenciar el motor: solo `netstandard`.
 
 ---
 

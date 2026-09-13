@@ -12,6 +12,13 @@ only ever extended, never changed.
 
 ### Added
 
+- Core model: `Scope`, `RecordKind`, `SlotId`, `EternalKey` with path composition and record id
+  validation, `SaveProfile` with its four presets, and the advisory `ScopeRules` matrix.
+- Load outcomes as values rather than exceptions: `LoadStatus` with its ten verdicts,
+  `LoadResult<T>`, and `IntegrityReport` carrying the failing region and the sizes that were read.
+- Core interfaces: `ISerializer`, `IDocumentSerializer` over the `EternalNode` tree,
+  `IByteTransform`, `IClock`, `IEternalLog` and the asynchronous `IStore` with
+  `StoreCapabilities`.
 - Package scaffolding: `package.json`, folder layout and the seven assemblies (`Core`, `Tooling`,
   `Serialization.Newtonsoft`, `Crypto`, `Unity`, `Unity.Editor`, `Tests`).
 - `Core` and `Tooling` declared without engine references (`noEngineReferences`).

@@ -15,10 +15,10 @@ engine-independent core.
 > [!WARNING]
 > **This package is under early development and is not ready for production use.**
 >
-> The scaffolding is in place, but there is no functional save code yet. The public API is
-> unstable and will keep changing until a second project consumes the package. The **file
-> format**, once version 1 of the container ships, is a different matter: it will only ever be
-> extended, never changed.
+> The core types and interfaces are in place; the container itself is not written yet, so
+> nothing can be saved or loaded so far. The public API is unstable and will keep changing until a
+> second project consumes the package. The **file format**, once version 1 of the container ships,
+> is a different matter: it will only ever be extended, never changed.
 
 ## 📝 Description
 
@@ -151,8 +151,8 @@ themselves with the new one.
 
 | Phase | | Status |
 | --- | --- | --- |
-| 0 | Package scaffolding | 🟨 in progress |
-| 1 | Core: container and transform pipeline | ⬜ |
+| 0 | Package scaffolding | ✅ done |
+| 1 | Core: container and transform pipeline | 🟨 in progress |
 | 2 | Newtonsoft adapter and file store | ⬜ |
 | 3 | Test suite, golden files, store conformance | ⬜ |
 | 4 | WebGL store | ⬜ |
