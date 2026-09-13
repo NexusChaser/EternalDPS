@@ -87,4 +87,17 @@ Están razonadas en `Documentation~/Architecture.md`. En resumen:
 
 ## Licencia
 
-MIT. Ver `LICENSE`.
+**Apache License 2.0.** Ver `LICENSE` y `NOTICE`.
+
+Se eligio sobre MIT porque hace exigible lo que el proyecto pide y MIT no:
+
+- **§4(b)** obliga a que todo archivo modificado lleve un aviso visible de que fue cambiado.
+- **§4(c)** obliga a conservar los avisos de copyright y atribucion originales.
+- **§4(d)** obliga a reproducir el contenido del archivo `NOTICE`.
+- **§6** no cede las marcas: nadie puede usar el nombre del proyecto ni el del autor para
+  respaldar lo suyo.
+
+Ademas incluye cesion expresa de patentes, cosa que MIT no tiene.
+
+Puedes usarlo y modificarlo en proyectos comerciales y no comerciales. Lo unico que se pide a
+cambio es que la atribucion viaje con el codigo y que se declare lo que hayas cambiado.
