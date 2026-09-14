@@ -16,7 +16,7 @@ las referencias en commits y mensajes sigan valiendo.
 | 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
 | 1 | Núcleo: contenedor y tubería | 27 | ✅ 27/27 |
 | 2 | Serialización y almacén de archivo | 14 | ✅ 14/14 |
-| 3 | **Integración mínima en este juego** | 11 | ⬜ |
+| 3 | **Integración en este juego** (A ya; B, C, D bloqueados por interfaz) | 19 | ⬜ |
 | 4 | Pruebas | 17 | ⬜ |
 | 5 | WebGL | 9 | ⬜ |
 | 6 | Tooling sin motor | 13 | ⬜ |
@@ -28,11 +28,12 @@ las referencias en commits y mensajes sigan valiendo.
 | 12 | Binario | 6 | ⬜ |
 | 13 | Cierre y publicación | 7 | ⬜ |
 
-**155 tareas. Las 5 decisiones de diseño, cerradas. Las 6 de implementación de `CORE-01..08`,
-confirmadas.**
+**163 tareas.** De las decisiones de diseño hay **5 cerradas y una abierta**: `D-06`, cómo sale un
+jugador de una partida. Las 6 decisiones de implementación de `CORE-01..08`, confirmadas.
 
 **Hitos:**
-- **H1 — este juego ya persiste** → al terminar la fase 3. Es el primer punto con valor real.
+- **H1 — este juego ya persiste** → al terminar el **bloque A** de la fase 3. Es el primer punto
+  con valor real, y no depende de ninguna interfaz nueva.
 - **H2 — el formato está blindado** → al terminar la fase 4. A partir de aquí el formato es contrato.
 - **H3 — utilizable por QA** → al terminar la fase 7.
 - **H4 — reutilizable de verdad** → al terminar la fase 13.
@@ -319,43 +320,135 @@ un `$type` en un guardado, no solo comprobar el ajuste.
 
 ---
 
-## Fase 3 — Integración mínima en este juego · **Hito H1**
+## Fase 3 — Integración en este juego
 
-Esta fase es la que convierte el trabajo en valor. **Recordatorio: hoy el juego no persiste nada
-en build** — ni el volumen ni el idioma. Se comprobó: cero usos de `PlayerPrefs`,
-`persistentDataPath` o serialización en el código de juego, y los cambios de `CycloneMemory`
-solo sobreviven en el editor porque Unity serializa el asset.
+Dividida en bloques porque **no todo depende de nosotros**. Lo que ya tiene interfaz se puede
+hacer hoy; lo que no la tiene está bloqueado por decisiones de diseño del juego, no por el sistema
+de guardado. Mezclarlo todo en una lista haría parecer pendiente de código algo que está pendiente
+de decidir.
 
-- [ ] **GAME-01** Definir los registros de este juego según la matriz: `machine/display`,
-      `account/prefs`. Progreso, de momento, no se crea; el cargador trata «no existe» como
-      «progreso nuevo». Los cosméticos futuros irán en **ámbito cuenta**, nunca en ranura — o
-      borrar una partida borraría las skins. → cierra `D-05`
-- [ ] **GAME-02** Modelo de estado de partida: turno, posiciones, puntuaciones, inventarios,
-      **minijuego en curso** y semilla del RNG. **No se serializa nada interno de los
-      minijuegos**: al reanudar se vuelve a ese minijuego y se reinicia desde cero.
-      Con `schemaVersion` desde el primer commit. → cierra `D-04`
+> **Sobre el estado actual, dicho con precisión.** Hoy el juego no persiste nada en build, y eso
+> **no es un fallo**: `CycloneAMS` se hizo agnóstico a propósito, y para una jam persistir entre
+> sesiones no aporta nada — basta con que los valores vivan mientras el juego está abierto. Es
+> funcionalidad no implementada, no un defecto. Lo que cambia ahora es que esta ya es la versión
+> final.
+
+---
+
+### Bloque A — Ajustes que ya tienen interfaz · **Hito H1**
+
+Los cuatro sliders de volumen y el selector de idioma **ya existen en `MainMenu.unity` y ya están
+conectados**. Persistirlos no añade un solo elemento de interfaz: el slider sigue escribiendo en
+`CycloneMemory` igual que hoy, y lo único nuevo es que ese valor se vuelque a disco y se lea al
+arrancar. Por eso este bloque no depende de nada.
+
+Su valor real no es el volumen: es **comprobar la fontanería entera en una build de PC** —
+IL2CPP, rutas, firma, arranque— con cuatro floats en vez de con el estado de una partida.
+
+- [ ] **GAME-01** Definir los registros de este bloque: **`account/prefs`** (volúmenes + idioma),
+      ámbito cuenta. El registro `machine/display` se define en el bloque C, con los gráficos.
+      Progreso no se crea: el cargador trata «no existe» como «nuevo». Los cosméticos futuros irán
+      en **ámbito cuenta**, nunca en ranura — o borrar una partida borraría las skins.
+      → cierra `D-05`
 - [ ] **GAME-03** Asmdef propio para los modelos de datos, para preservarlo entero en `link.xml`
       en vez de ir tipo por tipo.
 - [ ] **GAME-04** Persistir los **cuatro volúmenes** y enlazarlos con `CycloneMemory` al arrancar.
+      Antirrebote incluido: un slider arrastrado escribe una vez, no sesenta.
 - [ ] **GAME-05** Persistir el **idioma** y aplicarlo antes de que se resuelva la primera cadena
       localizada.
-- [ ] **GAME-06** Persistir **calidad gráfica y resolución** en `machine/` — ámbito de máquina,
-      nunca de nube.
-- [ ] **GAME-07** Captura y restauración de la partida. El punto de guardado es **al entrar al
-      minijuego, con el tablero tal como estaba antes de sus recompensas** — así reiniciar el
-      minijuego no puede repartir premios dos veces.
-- [ ] **GAME-08** Verificar en una **build real** (no solo en el editor) que volumen e idioma
-      sobreviven al cierre.
-- [ ] **GAME-09** Generar el `productId` de este juego, congelarlo, y enganchar la adopción
-      automática de `STO-06`.
-- [ ] **GAME-10** Generar el material de clave `keyId 1`, implementar el `IKeyProvider` del juego
-      en su propio ensamblado, y **decidir quién lo custodia** y dónde (no en el repo público del
-      paquete). → cierra la parte pendiente de `D-03`
-- [ ] **GAME-11** Exportar e importar guardado desde el juego: a archivo y a cadena pegable.
-      Es la única vía entre orígenes distintos y entre plataformas distintas.
+- [ ] **GAME-08** Verificar en una **build real de PC**, no solo en el editor, que volumen e idioma
+      sobreviven al cierre. Es el punto donde aparecen los problemas de IL2CPP y de rutas, y por eso
+      va aquí y no al final.
+- [ ] **GAME-09** `productId` congelado y adopción automática de `STO-06` enganchada.
+      *Hecho:* el `productId` está generado y congelado, en `CarloVsCarlo.Save`.
+      *Falta:* llamar a la adopción al arrancar.
+- [ ] **GAME-10** Clave `keyId 1` e `IKeyProvider` del juego, con custodia decidida.
+      *Hecho:* clave generada con CSPRNG, partida en tres trozos sin cadenas literales; custodia
+      resuelta —repo privado del juego, verificado como `PRIVATE`—; `IKeyProvider` implementado.
+      *Falta:* moverlo a su propio ensamblado.
 
-> **Hecho cuando:** cierras el juego compilado, lo vuelves a abrir y el volumen, el idioma y la
-> calidad gráfica siguen donde los dejaste.
+> **Hecho cuando:** cierras la build de PC, la vuelves a abrir, y el volumen y el idioma siguen
+> donde los dejaste.
+
+---
+
+### Bloque B — Partida en curso · **bloqueado por interfaz**
+
+Aquí está el valor de verdad para el jugador, y **el modelo de datos ya existe**:
+`Board_MatchSession_SO` ya tiene `Capture()` y `Restore()`, campos planos, y lo usan
+`Board_GameManager` y `Board_RoundManager`. Lo que falta no es el estado, es que sobreviva al
+cierre del proceso.
+
+**Pero no se puede empezar**, y no por el código. El juego **no tiene pausa**: cero acción `Pause`
+en `Game.inputactions`, y los únicos usos de `Time.timeScale` están en el fader de carga y en los
+tweens de ventanas. Sin pausa no hay dónde poner «salir de la partida», y sin eso no hay momento
+en el que preguntar qué se hace con el guardado.
+
+- [ ] **D-06 — Cómo sale un jugador de una partida.** *Abierta.* Cuatro preguntas, y son de
+      diseño del juego, no del sistema de guardado:
+      **(a)** ¿Hay pausa? ¿Con qué tecla, y en qué mapas — solo en el tablero, o también dentro de
+      los minijuegos?
+      **(b)** ¿Se puede abandonar una partida a medias, o el único modo de salir es cerrar el juego?
+      **(c)** Al salir, ¿guarda y sale, pregunta, o descarta?
+      **(d)** ¿«Continuar» aparece aparte de «Jugar» en el menú? ¿Y si se pulsa «Jugar» con una
+      partida guardada: se pisa sin avisar, o se pregunta?
+      *Consecuencia de (a) que hay que decidir a sabiendas:* como `D-04` fija que **lo interno de un
+      minijuego no se guarda y al reanudar se reinicia**, permitir pausar *dentro* de un minijuego y
+      salir significa que el jugador vuelve al principio de ese minijuego, no a donde estaba.
+
+**Prerrequisitos de interfaz.** No son tareas del sistema de guardado; son del juego, y sin ellas
+lo de abajo no tiene dónde engancharse.
+
+- [ ] **GAME-12** Acción `Pause` en `Game.inputactions` y sistema de pausa (teclado y mando).
+- [ ] **GAME-13** Menú de pausa.
+- [ ] **GAME-14** Salir de la partida desde la pausa, con el flujo que decida `D-06(c)`.
+- [ ] **GAME-15** Botón **«Continuar»** en el menú principal, visible solo si existe una partida
+      guardada y esa partida **verifica**. Si está dañada, no se ofrece como si estuviera bien.
+- [ ] **GAME-16** Qué ocurre al pulsar «Jugar» con una partida guardada, según `D-06(d)`.
+
+**Del sistema de guardado**, una vez exista lo anterior:
+
+- [ ] **GAME-02** Modelo de estado de partida como **POCO plano**, espejo de
+      `Board_MatchSession_SO`: turno, posiciones, puntuaciones, inventarios, **minijuego en curso**
+      y semilla del RNG. Un `ScriptableObject` no se serializa limpio ni debe llevar referencias a
+      objetos de Unity dentro de un guardado. `Capture`/`Restore` ya definen qué entra y qué sale,
+      así que el espejo es mecánico. Con `schemaVersion` desde el primer commit. → cierra `D-04`
+- [ ] **GAME-07** Captura y restauración. El punto de guardado es **al entrar al minijuego, con el
+      tablero tal como estaba antes de sus recompensas** — así reiniciar el minijuego no puede
+      repartir premios dos veces.
+- [ ] **GAME-17** Borrar la partida al terminarla. El perfil es `Lifetime.Session`: existe para
+      reanudarse una vez, y dejarla ahí permitiría rebobinar una partida ya jugada.
+- [ ] **GAME-19** Qué se le enseña al jugador si la partida no carga. El veredicto ya viene del
+      sistema (`IntegrityFailed`, `SchemaTooNew`…) y la política del perfil ya decide qué hacer;
+      falta el texto y la pantalla. **Nunca en silencio**, y nunca acusando al jugador.
+
+> **Hecho cuando:** empiezas una partida, entras a un minijuego, cierras el juego, lo reabres y
+> continúas desde el tablero — con el minijuego reiniciado, no a medias.
+
+---
+
+### Bloque C — Gráficos · **bloqueado por interfaz**
+
+No existe nada: cero usos de `QualitySettings` o `Screen.SetResolution` en todo el proyecto. Esto
+no es persistencia pendiente, es una función del juego que aún no se ha construido.
+
+- [ ] **GAME-18** Menú de calidad gráfica y resolución. *Prerrequisito, no es del sistema de
+      guardado.*
+- [ ] **GAME-06** Definir el registro **`machine/display`** y persistir calidad y resolución en él.
+      Ámbito de máquina, **nunca a la nube**: enviar la resolución de este ordenador al portátil del
+      jugador es un fallo, no una función. Se aplica **antes del primer frame**, lo que condiciona
+      dónde vive el arranque del sistema.
+
+> **Hecho cuando:** cambias la calidad, cierras la build, la reabres y sigue como la dejaste — y al
+> abrirla en otra máquina, esa otra máquina conserva la suya.
+
+---
+
+### Bloque D — Portabilidad · *cuando haga falta*
+
+- [ ] **GAME-11** Exportar e importar guardado desde el juego: a archivo y a cadena pegable. Es la
+      única vía entre orígenes distintos y entre plataformas distintas. Necesita su propia pantalla,
+      así que también depende de interfaz.
 
 ---
 
