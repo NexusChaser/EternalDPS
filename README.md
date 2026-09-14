@@ -15,9 +15,10 @@ engine-independent core.
 > [!WARNING]
 > **This package is under early development and is not ready for production use.**
 >
-> The core, the JSON adapter, the file store and the Unity layer are in place, so a game can save
-> and load through the package. The API is still unstable and will keep changing until a second
-> project consumes it, and the browser, Steam and editor-tooling layers do not exist yet. The public API is unstable and
+> **Now in real use.** A shipped PC build saves and restores its settings through this package:
+> written, signed, verified and read back across a restart. The API is still unstable and will keep
+> changing until a second project consumes it, and the browser, Steam and editor-tooling layers do
+> not exist yet. The public API is unstable and
 > will keep changing until a second project consumes the package. The **file format**, once version
 > 1 of the container ships, is a different matter: it will only ever be extended, never changed.
 

@@ -16,7 +16,7 @@ las referencias en commits y mensajes sigan valiendo.
 | 0 | Andamiaje del paquete | 9 | ✅ 9/9 |
 | 1 | Núcleo: contenedor y tubería | 27 | ✅ 27/27 |
 | 2 | Serialización y almacén de archivo | 14 | ✅ 14/14 |
-| 3 | **Integración en este juego** (A ya; B, C, D bloqueados por interfaz) | 19 | ⬜ |
+| 3 | **Integración en este juego** (A ✅; B, C, D bloqueados por interfaz) | 19 | 🔄 7/19 |
 | 4 | Pruebas | 17 | ⬜ |
 | 5 | WebGL | 9 | ⬜ |
 | 6 | Tooling sin motor | 13 | ⬜ |
@@ -32,8 +32,8 @@ las referencias en commits y mensajes sigan valiendo.
 jugador de una partida. Las 6 decisiones de implementación de `CORE-01..08`, confirmadas.
 
 **Hitos:**
-- **H1 — este juego ya persiste** → al terminar el **bloque A** de la fase 3. Es el primer punto
-  con valor real, y no depende de ninguna interfaz nueva.
+- **H1 — este juego ya persiste** ✅ **alcanzado.** Verificado en una build de PC: se cambian los
+  ajustes, se cierra el juego, se vuelve a abrir y siguen ahí. Era el primer punto con valor real.
 - **H2 — el formato está blindado** → al terminar la fase 4. A partir de aquí el formato es contrato.
 - **H3 — utilizable por QA** → al terminar la fase 7.
 - **H4 — reutilizable de verdad** → al terminar la fase 13.
@@ -356,7 +356,7 @@ IL2CPP, rutas, firma, arranque— con cuatro floats en vez de con el estado de u
       Antirrebote incluido: un slider arrastrado escribe una vez, no sesenta.
 - [x] **GAME-05** Persistir el **idioma** y aplicarlo antes de que se resuelva la primera cadena
       localizada.
-- [ ] **GAME-08** Verificar en una **build real de PC**, no solo en el editor, que volumen e idioma
+- [x] **GAME-08** Verificar en una **build real de PC**, no solo en el editor, que volumen e idioma
       sobreviven al cierre. Es el punto donde aparecen los problemas de IL2CPP y de rutas, y por eso
       va aquí y no al final.
 - [x] **GAME-09** `productId` congelado y adopción automática de `STO-06` enganchada al arranque.
@@ -367,7 +367,11 @@ IL2CPP, rutas, firma, arranque— con cuatro floats en vez de con el estado de u
 > **Hecho cuando:** cierras la build de PC, la vuelves a abrir, y el volumen y el idioma siguen
 > donde los dejaste.
 >
-> 🔄 **6 de 7.** Verificado de punta a punta contra el disco real, con la clave del juego: el
+> ✅ **7 de 7 — bloque cerrado, hito H1 alcanzado.** Comprobado en una **build real de PC**, no en
+> el editor: se cambian los ajustes, se cierra el juego, se vuelve a abrir y siguen donde se
+> dejaron.
+>
+> Antes de eso, verificado de punta a punta contra el disco real, con la clave del juego: el
 > registro se escribe (190 bytes), **no es legible como texto**, la firma es válida, el `productId`
 > es el correcto, y tras volver a arrancar los cuatro volúmenes y el idioma vuelven exactos. Un byte
 > cambiado se detecta, y con el archivo roto el juego **arranca igual** y usa los valores por
@@ -375,9 +379,8 @@ IL2CPP, rutas, firma, arranque— con cuatro floats en vez de con el estado de u
 >
 > ✅ **Verificado también en modo de juego**, que es lo que el modo edición no podía tocar porque
 > `AudioMixer.SetFloat` rechaza escrituras fuera de él: el sistema arranca solo (`IsReady`), el
-> volumen llega al mixer, y **el guardado ocurre por su cuenta** — sin pedirlo, el antirrebete
-> cumple su espera y aparece `Saved account/prefs.etm`. Falta solo `GAME-08`: repetirlo en una
-> **build** de PC, no en el editor.
+> volumen llega al mixer, y **el guardado ocurre por su cuenta** — sin pedirlo, el antirrebote
+> cumple su espera y aparece `Saved account/prefs.etm`.
 
 ### Decisiones tomadas al implementar el bloque A
 
