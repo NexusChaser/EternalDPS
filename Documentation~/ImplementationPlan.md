@@ -373,16 +373,20 @@ IL2CPP, rutas, firma, arranque— con cuatro floats en vez de con el estado de u
 > cambiado se detecta, y con el archivo roto el juego **arranca igual** y usa los valores por
 > defecto.
 >
-> ⚠️ **Lo único sin verificar: que los volúmenes lleguen al mixer.** `AudioMixer.SetFloat` no acepta
-> valores fuera del modo de juego, así que eso solo se puede comprobar jugando. Es exactamente lo
-> que cubre `GAME-08`.
+> ✅ **Verificado también en modo de juego**, que es lo que el modo edición no podía tocar porque
+> `AudioMixer.SetFloat` rechaza escrituras fuera de él: el sistema arranca solo (`IsReady`), el
+> volumen llega al mixer, y **el guardado ocurre por su cuenta** — sin pedirlo, el antirrebete
+> cumple su espera y aparece `Saved account/prefs.etm`. Falta solo `GAME-08`: repetirlo en una
+> **build** de PC, no en el editor.
 
 ### Decisiones tomadas al implementar el bloque A
 
 | decisión | por qué |
 |---|---|
 | **No se toca ni una línea de CycloneAMS** | Es un sistema agnóstico y reutilizable, y esa es justo la propiedad que lo hace valioso para el siguiente proyecto. La persistencia se apoya encima usando su API pública; CycloneAMS no se entera de que existe |
-| **Se detectan los cambios por sondeo**, no por evento | CycloneAMS no expone ningún evento de cambio de volumen, y añadírselo sería acoplarlo. Comparar cuatro `float` y una cadena por frame no cuesta nada al lado de dibujar un frame, y deja el acoplamiento en una sola dirección |
+| **Se escucha un evento; no se sondea nada** | Escribí primero un sondeo por frame afirmando que CycloneAMS no tenía eventos. **Era falso**: `CycloneEvents` existe y `OnChannelVolumeChanged` llevaba un comentario diciendo que es el enganche para el guardado del juego. Busqué `event` dentro de `CycloneMemory.cs`, no lo vi, y concluí sobre todo el sistema desde un solo archivo |
+| **Dos eventos en vez de uno con una regla**: `OnChannelVolumeSet` y `OnChannelVolumeChanged` | Responden preguntas distintas. «Alguien lo asignó» sirve a quien rastrea interacción; «el valor es otro» es lo que necesita un guardado, porque avisado de cada asignación reescribiría bytes que ya están en disco. Se descartó `Try…` como nombre: en .NET implica que puede fallar, y el aviso solo sale después de que el mixer aceptó |
+| **La comparación del cambio es exacta, no aproximada** | Un jugador que mueve el slider un píxel hizo un cambio real, y tratarlo como ruido tiraría el ajuste que acaba de elegir. Va después del *clamp*, así que asignar 1.5 a un canal ya al máximo no anuncia nada |
 | **Los volúmenes son cuatro campos**, no un mapa por `ChannelType` | Ese enum tiene un hueco deliberado (`UI = 4`, con el 3 vacío para que un valor retirado no se reutilice). Meter el enum en un guardado ataría el formato a esos números para siempre |
 | **El idioma se guarda por código (`es`), no por índice** | Un índice apuntaría a otro idioma el día que se añada un locale al proyecto |
 | **La configuración vive en `Resources`** | El idioma hay que aplicarlo antes de que se resuelva la primera cadena, y a esa altura no hay ninguna escena cargada de la que leer una referencia. Un componente en la primera escena se rompería en cuanto alguien arranque desde otra, que es lo que se hace todo el día trabajando |
