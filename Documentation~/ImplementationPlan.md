@@ -345,30 +345,49 @@ arrancar. Por eso este bloque no depende de nada.
 Su valor real no es el volumen: es **comprobar la fontanería entera en una build de PC** —
 IL2CPP, rutas, firma, arranque— con cuatro floats en vez de con el estado de una partida.
 
-- [ ] **GAME-01** Definir los registros de este bloque: **`account/prefs`** (volúmenes + idioma),
+- [x] **GAME-01** Definir los registros de este bloque: **`account/prefs`** (volúmenes + idioma),
       ámbito cuenta. El registro `machine/display` se define en el bloque C, con los gráficos.
       Progreso no se crea: el cargador trata «no existe» como «nuevo». Los cosméticos futuros irán
       en **ámbito cuenta**, nunca en ranura — o borrar una partida borraría las skins.
       → cierra `D-05`
-- [ ] **GAME-03** Asmdef propio para los modelos de datos, para preservarlo entero en `link.xml`
+- [x] **GAME-03** Asmdef propio para los modelos de datos, para preservarlo entero en `link.xml`
       en vez de ir tipo por tipo.
-- [ ] **GAME-04** Persistir los **cuatro volúmenes** y enlazarlos con `CycloneMemory` al arrancar.
+- [x] **GAME-04** Persistir los **cuatro volúmenes** y enlazarlos con `CycloneMemory` al arrancar.
       Antirrebote incluido: un slider arrastrado escribe una vez, no sesenta.
-- [ ] **GAME-05** Persistir el **idioma** y aplicarlo antes de que se resuelva la primera cadena
+- [x] **GAME-05** Persistir el **idioma** y aplicarlo antes de que se resuelva la primera cadena
       localizada.
 - [ ] **GAME-08** Verificar en una **build real de PC**, no solo en el editor, que volumen e idioma
       sobreviven al cierre. Es el punto donde aparecen los problemas de IL2CPP y de rutas, y por eso
       va aquí y no al final.
-- [ ] **GAME-09** `productId` congelado y adopción automática de `STO-06` enganchada.
-      *Hecho:* el `productId` está generado y congelado, en `CarloVsCarlo.Save`.
-      *Falta:* llamar a la adopción al arrancar.
-- [ ] **GAME-10** Clave `keyId 1` e `IKeyProvider` del juego, con custodia decidida.
-      *Hecho:* clave generada con CSPRNG, partida en tres trozos sin cadenas literales; custodia
-      resuelta —repo privado del juego, verificado como `PRIVATE`—; `IKeyProvider` implementado.
-      *Falta:* moverlo a su propio ensamblado.
+- [x] **GAME-09** `productId` congelado y adopción automática de `STO-06` enganchada al arranque.
+- [x] **GAME-10** Clave `keyId 1` e `IKeyProvider` del juego en su propio ensamblado
+      (`CarloVsCarlo.SaveKeys`, sin referencias al motor), con custodia en el repo privado del
+      juego, verificado como `PRIVATE`.
 
 > **Hecho cuando:** cierras la build de PC, la vuelves a abrir, y el volumen y el idioma siguen
 > donde los dejaste.
+>
+> 🔄 **6 de 7.** Verificado de punta a punta contra el disco real, con la clave del juego: el
+> registro se escribe (190 bytes), **no es legible como texto**, la firma es válida, el `productId`
+> es el correcto, y tras volver a arrancar los cuatro volúmenes y el idioma vuelven exactos. Un byte
+> cambiado se detecta, y con el archivo roto el juego **arranca igual** y usa los valores por
+> defecto.
+>
+> ⚠️ **Lo único sin verificar: que los volúmenes lleguen al mixer.** `AudioMixer.SetFloat` no acepta
+> valores fuera del modo de juego, así que eso solo se puede comprobar jugando. Es exactamente lo
+> que cubre `GAME-08`.
+
+### Decisiones tomadas al implementar el bloque A
+
+| decisión | por qué |
+|---|---|
+| **No se toca ni una línea de CycloneAMS** | Es un sistema agnóstico y reutilizable, y esa es justo la propiedad que lo hace valioso para el siguiente proyecto. La persistencia se apoya encima usando su API pública; CycloneAMS no se entera de que existe |
+| **Se detectan los cambios por sondeo**, no por evento | CycloneAMS no expone ningún evento de cambio de volumen, y añadírselo sería acoplarlo. Comparar cuatro `float` y una cadena por frame no cuesta nada al lado de dibujar un frame, y deja el acoplamiento en una sola dirección |
+| **Los volúmenes son cuatro campos**, no un mapa por `ChannelType` | Ese enum tiene un hueco deliberado (`UI = 4`, con el 3 vacío para que un valor retirado no se reutilice). Meter el enum en un guardado ataría el formato a esos números para siempre |
+| **El idioma se guarda por código (`es`), no por índice** | Un índice apuntaría a otro idioma el día que se añada un locale al proyecto |
+| **La configuración vive en `Resources`** | El idioma hay que aplicarlo antes de que se resuelva la primera cadena, y a esa altura no hay ninguna escena cargada de la que leer una referencia. Un componente en la primera escena se rompería en cuanto alguien arranque desde otra, que es lo que se hace todo el día trabajando |
+| **La lectura al arrancar bloquea** | Unos cientos de bytes de un disco local, una vez. Lo que compra es el orden: el idioma puesto antes de la primera cadena. En navegador no valdría, y ahí hará falta otra respuesta |
+| **Un fallo del audio no tumba el arranque** | `SetVolume` lanza excepción si el mixer rechaza el valor. Lo descubrí probando: sin protección, un problema con el **volumen** habría hecho perder también el **idioma**. Ahora avisa y sigue |
 
 ---
 
