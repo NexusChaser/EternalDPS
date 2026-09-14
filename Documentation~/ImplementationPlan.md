@@ -303,10 +303,19 @@ un `$type` en un guardado, no solo comprobar el ajuste.
 | **Sobrecarga no genérica `SaveAsync(key, value, Type, …)`** | El runner conoce el tipo en tiempo de ejecución, no en compilación. La genérica delega en ella | sí | **Se queda** |
 | **El `link.xml` es deliberadamente estrecho** | Nombrar el ensamblado entero de Newtonsoft conservaría todo y engordaría la build sin motivo. **Un juego tiene que preservar sus propios modelos de guardado en su propio `link.xml`**: el paquete no puede saber cuáles son | sí | **Se queda**, con esa advertencia escrita en el archivo |
 
-> ⚠️ **Pendiente de verificar.** Las 7 assemblies compilan sin errores y los `.meta` están generados,
-> pero el puente del editor se colgó antes de poder **ejecutar** la suite con las pruebas de
-> `UNI-01..05` dentro. Las ~25 pruebas nuevas de esta tanda **no se han ejecutado todavía**. Hay que
-> reiniciar Unity y correrlas antes de dar la fase por buena.
+**Cubierto por 27 pruebas nuevas** (233 en total), todas en verde.
+
+> **Un defecto que encontraron las pruebas, no la revisión.** `EternalSaveRunner.Create` llamaba a
+> `DontDestroyOnLoad` sin condición. Eso es un **error directo fuera del modo de juego**, así que el
+> componente era inusable desde cualquier herramienta de editor que quisiera escribir un guardado — y
+> la fase 7 está llena de ellas. En un juego publicado no se habría notado nunca, porque ahí siempre
+> se está en modo de juego: exactamente el tipo de fallo que solo aparece cuando alguien más intenta
+> usar el paquete. Ahora la llamada está condicionada a `Application.isPlaying`, con una prueba que
+> lo fija.
+>
+> De paso cambié `HideFlags.HideAndDontSave` por `HideFlags.DontSave`: el objeto sigue sin
+> guardarse en la escena, pero ahora **se ve en la jerarquía**. Quien busque por qué un guardado
+> ocurrió o no debería poder encontrar al responsable.
 
 ---
 

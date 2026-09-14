@@ -207,14 +207,26 @@ namespace NexusChaser.EternalDPS.Tests
         }
 
         [Test]
-        public void The_runner_survives_a_scene_load()
+        public void The_runner_belongs_to_the_run_and_not_to_a_scene()
         {
-            // A save triggered by the application being paused during a scene change would otherwise
-            // have nowhere left to run.
+            // Never serialised into a scene, but visible in the hierarchy: a developer looking for
+            // why a save did or did not happen should be able to find the thing responsible.
             var driver = EternalUnity.CreateDriver(Setup(_store));
             _runner = EternalSaveRunner.Create(driver);
 
-            Assert.AreEqual(HideFlags.HideAndDontSave, _runner.gameObject.hideFlags);
+            Assert.AreEqual(HideFlags.DontSave, _runner.gameObject.hideFlags);
+        }
+
+        [Test]
+        public void Creating_a_runner_outside_play_mode_does_not_throw()
+        {
+            // DontDestroyOnLoad is an outright error outside play mode, so calling it unguarded
+            // makes the component unusable from any editor tool that wants to write a save — and
+            // phase 7 is full of those.
+            var driver = EternalUnity.CreateDriver(Setup(_store));
+
+            Assert.IsFalse(Application.isPlaying, "This test only means something outside play mode.");
+            Assert.DoesNotThrow(() => _runner = EternalSaveRunner.Create(driver));
         }
 
         [Test]

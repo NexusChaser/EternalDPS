@@ -50,11 +50,18 @@ namespace NexusChaser.EternalDPS.Unity
         public bool HasPendingChanges => _debouncer != null && !_debouncer.IsIdle;
 
         /// <summary>
-        /// Creates a runner on a hidden object that survives scene loads.
+        /// Creates a runner on its own object that survives scene loads.
         /// </summary>
         /// <remarks>
-        /// It has to outlive scenes: a save triggered by the application being paused during a
-        /// scene change would otherwise have nowhere to run.
+        /// <para>
+        /// It has to outlive scenes: a save triggered by the application being paused during a scene
+        /// change would otherwise have nowhere to run.
+        /// </para>
+        /// <para>
+        /// The object is visible in the hierarchy but never saved into a scene. Visible because a
+        /// developer looking for why a save did or did not happen should be able to find the thing
+        /// responsible; never saved because it belongs to a run, not to a scene.
+        /// </para>
         /// </remarks>
         public static EternalSaveRunner Create(EternalDataDriver driver, float quietSeconds = 1f, IEternalLog log = null)
         {
@@ -65,10 +72,15 @@ namespace NexusChaser.EternalDPS.Unity
 
             var host = new GameObject("Eternal Save Runner")
             {
-                hideFlags = HideFlags.HideAndDontSave,
+                hideFlags = HideFlags.DontSave,
             };
 
-            DontDestroyOnLoad(host);
+            // Only meaningful while the game is running, and an outright error outside it. An editor
+            // tool that builds a runner to write a save has no scene loads to survive anyway.
+            if (Application.isPlaying)
+            {
+                DontDestroyOnLoad(host);
+            }
 
             var runner = host.AddComponent<EternalSaveRunner>();
             runner.Initialize(driver, quietSeconds, log);
